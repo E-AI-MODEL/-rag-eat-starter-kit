@@ -1,37 +1,37 @@
 # Data policy
 
-Deze repo is bedoeld voor openbare documentatie, prompts, voorbeelden en configuratiestructuren.
+This repository is meant for public documentation, prompts, examples and configuration templates.
 
-## Niet committen
+## Do not commit
 
-Zet de volgende inhoud niet in deze repo:
+Do not add:
 
-- persoonsgegevens
-- klantgegevens
-- leerlinggegevens
-- personeelsgegevens
-- medische gegevens
-- interne documenten
-- vertrouwelijke beleidsstukken
-- API-sleutels
+- personal data
+- customer data
+- student data
+- staff data
+- medical data
+- internal documents
+- confidential policies
+- API keys
 - tokens
-- wachtwoorden
+- passwords
 - private keys
-- volledige logs met gebruikersvragen
-- ruwe exports uit kennisbanken
-- documenten waarvoor je geen publicatierecht hebt
+- full user logs
+- raw knowledge-base exports
+- files you are not allowed to publish
 
-## Wel toegestaan
+## Good fit
 
-Geschikt voor deze repo:
+This repo can contain:
 
-- geanonimiseerde voorbeelden
-- lege templates
-- synthetische testvragen
-- publieke documentatie
-- configuratievoorbeelden zonder secrets
-- uitleg over RAG, EAT, evaluatie en security
+- anonymized examples
+- empty templates
+- synthetic test questions
+- public documentation
+- configuration examples without credentials
+- explanations of RAG, EAT, evaluation and safety
 
-## Bij twijfel
+## When in doubt
 
-Publiceer het niet. Maak een geanonimiseerd voorbeeld of gebruik een placeholder.
+Do not publish it. Use a placeholder or a synthetic example instead.
