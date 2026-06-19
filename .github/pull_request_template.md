@@ -1,17 +1,17 @@
-## Wat is aangepast?
+## What changed?
 
 
-## Waarom is dit nuttig?
+## Why is this useful?
 
 
-## Heeft dit invloed op prompts, config of evaluatie?
+## Does this affect prompts, config or evaluation?
 
-- [ ] Ja
-- [ ] Nee
+- [ ] Yes
+- [ ] No
 
-## Veiligheidscheck
+## Safety check
 
-- [ ] Geen persoonsgegevens toegevoegd
-- [ ] Geen secrets toegevoegd
-- [ ] Geen vertrouwelijke documenten toegevoegd
-- [ ] Voorbeelden zijn synthetisch of publiek
+- [ ] No personal data added
+- [ ] No secrets added
+- [ ] No confidential documents added
+- [ ] Examples are synthetic or public
