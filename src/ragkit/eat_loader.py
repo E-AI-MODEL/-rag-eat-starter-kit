@@ -1,23 +1,14 @@
 """Parse, validate and render an EAT behavior profile.
 
-This is the spine of the kit. An EAT file is not decoration: it is the single
-source of truth for the assistant's behavior, and it is validated the same way
-EAT-Core describes:
-
-- header forms: `name:`, `name{cols}:`, `name[n]{cols}:`
-- a `[n]` typed array must contain exactly `n` rows (strict mode)
-- every table row has exactly `len(cols)` comma-separated cells
-- every table cell is an identifier
-
-If the profile is malformed, loading fails loudly. That is the property a plain
-prompt string cannot give you, and it is what makes the behavior reviewable.
+This module keeps the EAT profile reviewable: header forms, table row counts,
+identifier cells and required behavior blocks are checked before runtime use.
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 
 _HEADER = re.compile(r"^([a-z_]+)(?:\[(\d+)\])?(?:\{([^}]*)\})?:\s*$")
 _IDENT = re.compile(r"^[A-Za-z0-9_]+$")
@@ -37,13 +28,14 @@ class EATProfile:
     locked: bool = False
 
     def simple(self, name: str) -> List[str]:
-        """Return a simple (non-table) block as a list of strings."""
+        """Return a simple block as a list of strings."""
         value = self.blocks.get(name, [])
         if value and isinstance(value[0], dict):
             raise EATValidationError(f"block '{name}' is a table, not a simple list")
         return list(value)  # type: ignore[arg-type]
 
     def table(self, name: str) -> List[Dict[str, str]]:
+        """Return a table block as a list of row dictionaries."""
         value = self.blocks.get(name, [])
         if value and not isinstance(value[0], dict):
             raise EATValidationError(f"block '{name}' is not a table")
@@ -59,7 +51,8 @@ class EATProfile:
 
         domain = self.simple("domain")
         if domain:
-            lines.append("Domain: " + ", ".join(d.replace("_", " ") for d in domain) + ".")
+            rendered = ", ".join(d.replace("_", " ") for d in domain)
+            lines.append(f"Domain: {rendered}.")
             lines.append("")
 
         mission = self.simple("mission")
@@ -72,7 +65,8 @@ class EATProfile:
         if workflow:
             lines.append("Workflow:")
             for i, row in enumerate(workflow, 1):
-                lines.append(f"{i}. {row['step']}: {row['action'].replace('_', ' ')}")
+                action = row["action"].replace("_", " ")
+                lines.append(f"{i}. {row['step']}: {action}")
             lines.append("")
 
         rules = self.simple("rules")
@@ -89,7 +83,8 @@ class EATProfile:
 
         style = self.simple("style")
         if style:
-            lines.append("Style: " + ", ".join(s.replace("_", " ") for s in style) + ".")
+            rendered = ", ".join(s.replace("_", " ") for s in style)
+            lines.append(f"Style: {rendered}.")
             lines.append("")
 
         explain = self.simple("explain_eat")
@@ -113,21 +108,24 @@ def _validate_required_blocks(profile: EATProfile) -> None:
 
     if missing:
         required = ", ".join(sorted(REQUIRED_BLOCKS))
+        missing_text = ", ".join(missing)
         raise EATValidationError(
-            f"EAT profile is missing required block(s): {', '.join(missing)}. "
+            f"EAT profile is missing required block(s): {missing_text}. "
             f"Required: {required}."
         )
     if invalid:
+        invalid_text = ", ".join(invalid)
         raise EATValidationError(
-            f"Required EAT block(s) must be simple lists, not tables: {', '.join(invalid)}."
+            "Required EAT block(s) must be simple lists, not tables: "
+            f"{invalid_text}."
         )
 
 
 def _parse(text: str, strict: bool = True) -> EATProfile:
     profile = EATProfile()
-    name: str | None = None
-    declared_rows: int | None = None
-    cols: List[str] | None = None
+    name: Optional[str] = None
+    declared_rows: Optional[int] = None
+    cols: Optional[List[str]] = None
     rows: List = []
 
     def flush() -> None:
@@ -151,10 +149,13 @@ def _parse(text: str, strict: bool = True) -> EATProfile:
             flush()
             name = header.group(1)
             declared_rows = int(header.group(2)) if header.group(2) else None
-            cols = [c.strip() for c in header.group(3).split(",")] if header.group(3) else None
+            if header.group(3):
+                cols = [c.strip() for c in header.group(3).split(",")]
+            else:
+                cols = None
             if declared_rows is not None and cols is None:
                 raise EATValidationError(
-                    f"block '{name}[{declared_rows}]' is a typed array and must declare columns"
+                    f"block '{name}[{declared_rows}]' must declare columns"
                 )
             rows = []
             continue
@@ -164,12 +165,13 @@ def _parse(text: str, strict: bool = True) -> EATProfile:
 
         item = raw.strip()
         if cols is None:
-            rows.append(item)  # simple list item
+            rows.append(item)
         else:
             cells = [c.strip() for c in item.split(",")]
             if len(cells) != len(cols):
                 raise EATValidationError(
-                    f"row in '{name}' has {len(cells)} cells, expected {len(cols)}: {item!r}"
+                    f"row in '{name}' has {len(cells)} cells, "
+                    f"expected {len(cols)}: {item!r}"
                 )
             for c in cells:
                 if not _IDENT.match(c):
