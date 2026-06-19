@@ -21,6 +21,7 @@ from typing import Dict, List, Union
 
 _HEADER = re.compile(r"^([a-z_]+)(?:\[(\d+)\])?(?:\{([^}]*)\})?:\s*$")
 _IDENT = re.compile(r"^[A-Za-z0-9_]+$")
+REQUIRED_BLOCKS = {"identity", "rules"}
 
 # A block is either a list of strings (simple block) or a list of row-dicts (table).
 Block = Union[List[str], List[Dict[str, str]]]
@@ -100,6 +101,28 @@ class EATProfile:
         return "\n".join(lines).strip() + "\n"
 
 
+def _validate_required_blocks(profile: EATProfile) -> None:
+    missing: List[str] = []
+    invalid: List[str] = []
+    for block in sorted(REQUIRED_BLOCKS):
+        value = profile.blocks.get(block)
+        if not value:
+            missing.append(block)
+        elif isinstance(value[0], dict):
+            invalid.append(block)
+
+    if missing:
+        required = ", ".join(sorted(REQUIRED_BLOCKS))
+        raise EATValidationError(
+            f"EAT profile is missing required block(s): {', '.join(missing)}. "
+            f"Required: {required}."
+        )
+    if invalid:
+        raise EATValidationError(
+            f"Required EAT block(s) must be simple lists, not tables: {', '.join(invalid)}."
+        )
+
+
 def _parse(text: str, strict: bool = True) -> EATProfile:
     profile = EATProfile()
     name: str | None = None
@@ -157,6 +180,8 @@ def _parse(text: str, strict: bool = True) -> EATProfile:
 
     locked_block = profile.blocks.get("locked", [])
     profile.locked = bool(locked_block) and locked_block[0] == "true"
+    if strict:
+        _validate_required_blocks(profile)
     return profile
 
 
