@@ -12,14 +12,15 @@ Open starter kit for designing and testing a source-grounded assistant profile.
 - `config/rag_pipeline.yaml`
 - `eval/eval_set.csv`
 - `eval/README.md`
+- `examples/example_question.md`
+- `examples/output_sample.md`
+- `checklist.md`
 - `.github/ISSUE_TEMPLATE/`
+- `.github/pull_request_template.md`
 - `DATA_POLICY.md`
 - `CONTRIBUTING.md`
 - `SECURITY.md`
-
-## Data policy
-
-Do not commit personal data, secrets, private logs or internal documents.
+- `CHANGELOG.md`
 
 ## License
 
