@@ -13,7 +13,6 @@ dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
 dev = ["ruff>=0.6"]
-# Optional: a real LLM provider for examples/llm_anthropic_adapter.py
 anthropic = ["anthropic>=0.40"]
 
 [project.scripts]
@@ -23,12 +22,9 @@ rag-eat = "ragkit.cli:main"
 where = ["src"]
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 target-version = "py39"
-src = ["src", "tests"]
+src = ["src"]
 
 [tool.ruff.lint]
-# E/F/W: pycodestyle + pyflakes, I: import order, B: bugbear.
-# UP (pyupgrade) is intentionally omitted: the package targets Python 3.9, where
-# runtime type aliases like `Callable[[...], str]` cannot use 3.10+ `X | Y` syntax.
 select = ["E", "F", "I", "W", "B"]
