@@ -11,7 +11,6 @@ Open starter kit for designing and testing a source-grounded assistant profile.
 - `prompts/rag_system_prompt_template.md`
 - `config/rag_pipeline.yaml`
 - `eval/rag_eval_set.csv`
-- `eval/eval_set.csv`
 - `eval/README.md`
 - `examples/example_question.md`
 - `examples/example_answer.md`
