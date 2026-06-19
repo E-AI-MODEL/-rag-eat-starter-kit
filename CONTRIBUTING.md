@@ -1,34 +1,34 @@
-# Bijdragen
+# Contributing
 
-Dank voor je bijdrage.
+Thanks for contributing.
 
-## Richtlijnen
+## Guidelines
 
-- Houd voorbeelden generiek en veilig.
-- Voeg geen echte persoonsgegevens toe.
-- Voeg geen secrets toe.
-- Schrijf duidelijk en praktisch.
-- Voeg nieuwe concepten toe met een kort voorbeeld.
-- Pas evaluatievoorbeelden aan zonder echte organisatiedata.
-- Vermeld bronnen waar dat nodig is.
+- Keep examples generic and safe.
+- Do not add real personal data.
+- Do not add secrets.
+- Write clearly and practically.
+- Add a short example for new concepts.
+- Keep evaluation examples synthetic or anonymized.
+- Add sources when they are needed.
 
-## Soorten bijdragen
+## Ways to contribute
 
-Je kunt helpen met:
+You can help with:
 
-- betere RAG-checklists
-- extra evaluatiecases
-- betere promptregels
-- voorbeelden voor retrievalproblemen
-- securitytests
-- documentatie over EAT
-- vertalingen
+- better RAG checklists
+- extra evaluation cases
+- clearer prompt rules
+- examples of retrieval problems
+- safety tests
+- EAT documentation
+- translations
 
 ## Pull requests
 
-Beschrijf in je pull request:
+Describe:
 
-1. Wat je hebt aangepast.
-2. Waarom dit nuttig is.
-3. Of de wijziging invloed heeft op prompts, config of evaluatie.
-4. Of je hebt gecontroleerd op gevoelige data.
+1. What you changed.
+2. Why it helps.
+3. Whether it affects prompts, config or evaluation.
+4. Whether you checked for sensitive data.
