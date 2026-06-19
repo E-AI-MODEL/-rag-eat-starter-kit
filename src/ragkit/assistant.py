@@ -9,8 +9,9 @@ holds: when nothing supports the question, the assistant abstains instead of gue
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional, Sequence
+from typing import Callable, List, Optional
 
 from .eat_loader import EATProfile
 from .retrieval import HybridIndex, ScoredChunk

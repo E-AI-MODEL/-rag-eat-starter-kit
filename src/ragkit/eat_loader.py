@@ -162,5 +162,5 @@ def _parse(text: str, strict: bool = True) -> EATProfile:
 
 def load_eat(path: str, strict: bool = True) -> EATProfile:
     """Load and validate an EAT profile from disk."""
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         return _parse(fh.read(), strict=strict)

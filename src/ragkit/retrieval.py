@@ -14,8 +14,9 @@ import math
 import os
 import re
 from collections import Counter
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Dict, List, Sequence
+from typing import Dict, List
 
 import yaml
 
@@ -91,7 +92,7 @@ def load_corpus(corpus_dir: str) -> List[Chunk]:
     """Load every `*.md` document under `corpus_dir` into access-tagged chunks."""
     chunks: List[Chunk] = []
     for path in sorted(glob.glob(os.path.join(corpus_dir, "*.md"))):
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             meta, body = _parse_frontmatter(fh.read())
         source_id = str(meta.get("source_id") or os.path.splitext(os.path.basename(path))[0])
         groups = meta.get("allowed_groups") or []

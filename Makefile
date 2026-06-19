@@ -1,16 +1,20 @@
 # Convenience commands. Run `make help` to see them.
 
-.PHONY: help install demo prompt eval test
+.PHONY: help install demo prompt eval test lint
 
 help:
-	@echo "make install   - install dependencies (PyYAML)"
+	@echo "make install   - install the package (editable) with dev tools"
 	@echo "make demo       - validate the EAT profile and run the eval set"
 	@echo "make prompt     - print the system prompt rendered from the EAT profile"
 	@echo "make eval        - run the evaluation set and report pass/fail"
 	@echo "make test        - run the unit tests"
+	@echo "make lint        - run ruff"
 
 install:
-	pip install -r requirements.txt
+	pip install -e ".[dev]"
+
+lint:
+	ruff check .
 
 demo:
 	python3 run.py

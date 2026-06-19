@@ -12,9 +12,9 @@ the answer step falls back to an extractive response when no LLM callable is pro
 so the whole loop is reproducible offline.
 """
 
+from .assistant import AnswerResult, Assistant
 from .eat_loader import EATProfile, EATValidationError, load_eat
 from .retrieval import Chunk, HybridIndex, load_corpus
-from .assistant import Assistant, AnswerResult
 
 __all__ = [
     "EATProfile",

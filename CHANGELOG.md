@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format is based on
 ## [Unreleased]
 
 ### Added
+- Packaging (`pyproject.toml`): the kit is pip-installable (`pip install -e .`) and
+  exposes a `rag-eat` console script; `ruff` lint config and a `dev` extra.
+- A worked, runnable LLM adapter (`examples/llm_anthropic_adapter.py`) showing how to
+  plug a real model into the vendor-neutral `Assistant`.
+- README status badges (CI, Python, license); CI now also lints with `ruff` and
+  installs the package editable.
 - **Runnable core** (`src/ragkit/`): the kit now runs. `run.py` validates the EAT
   profile and drives a real RAG loop — EAT-rendered system prompt, hybrid retrieval
   (BM25 + TF-IDF), fail-closed access control, grounded answering with abstention.
