@@ -1,10 +1,8 @@
-"""Hybrid retrieval with fail-closed access filtering.
+"""Hybrid retrieval with access filtering.
 
-Pure standard library plus PyYAML. No external services, no embeddings download.
-Hybrid = BM25 (good for exact terms, codes, names) + TF-IDF cosine (good for
-meaning), merged and reranked. Access control is applied *before* scoring and
-*fails closed*: a chunk with no group overlap is never even a candidate, so it
-can never leak into an answer.
+The module implements a small local retrieval stack: BM25 for exact terms, TF-IDF
+cosine for broader matching, score merging, metadata filtering and family-level
+selection of the most recent source.
 """
 
 from __future__ import annotations
@@ -55,14 +53,16 @@ class Chunk:
         bits = [self.title]
         if self.section:
             bits.append(self.section)
-        ref = " — ".join(bits)
+        ref = " - ".join(bits)
         if self.version or self.updated_at:
-            ref += f" (version {self.version or 'n/a'}, updated {self.updated_at or 'n/a'})"
+            version = self.version or "n/a"
+            updated = self.updated_at or "n/a"
+            ref += f" (version {version}, updated {updated})"
         return f"{ref}  [{self.source_id}]"
 
 
 def _split_sections(body: str) -> List[tuple[str, str]]:
-    """Split markdown into (heading, text) sections on `#` headings."""
+    """Split markdown into (heading, text) sections on headings."""
     sections: List[tuple[str, str]] = []
     heading = ""
     buf: List[str] = []
@@ -82,12 +82,7 @@ def _split_sections(body: str) -> List[tuple[str, str]]:
 
 
 def _parse_frontmatter(raw: str) -> tuple[dict, str]:
-    """Parse YAML front matter only when it is a complete opening block.
-
-    Body content may contain Markdown horizontal rules (`---`) without confusing
-    the parser, because only the first complete front-matter block at the start
-    of the file is consumed.
-    """
+    """Parse one YAML front-matter block at the start of a file."""
     match = _FRONTMATTER_RE.match(raw)
     if not match:
         return {}, raw
@@ -127,28 +122,32 @@ def _parse_date(value: object) -> str:
 
 
 def load_corpus(corpus_dir: str) -> List[Chunk]:
-    """Load every `*.md` document under `corpus_dir` into access-tagged chunks."""
+    """Load every markdown document under `corpus_dir` into chunks."""
     chunks: List[Chunk] = []
-    for path in sorted(glob.glob(os.path.join(corpus_dir, "*.md"))):
+    pattern = os.path.join(corpus_dir, "*.md")
+    for path in sorted(glob.glob(pattern)):
         with open(path, encoding="utf-8") as fh:
             meta, body = _parse_frontmatter(fh.read())
-        source_id = str(meta.get("source_id") or os.path.splitext(os.path.basename(path))[0])
+        filename = os.path.splitext(os.path.basename(path))[0]
+        source_id = str(meta.get("source_id") or filename)
         groups = meta.get("allowed_groups") or []
         if isinstance(groups, str):
             groups = [groups]
         updated_at = _parse_date(meta.get("updated_at"))
         for heading, text in _split_sections(body):
+            title = str(meta.get("title") or source_id)
+            token_text = f"{meta.get('title', '')} {heading} {text}"
             chunks.append(
                 Chunk(
                     source_id=source_id,
-                    title=str(meta.get("title") or source_id),
+                    title=title,
                     section=heading,
                     text=text,
                     version=str(meta.get("version") or ""),
                     updated_at=updated_at,
                     family=str(meta.get("family") or source_id),
                     allowed_groups=[str(g) for g in groups],
-                    tokens=tokenize(f"{meta.get('title', '')} {heading} {text}"),
+                    tokens=tokenize(token_text),
                 )
             )
     return chunks
@@ -172,7 +171,7 @@ class ScoredChunk:
 
 
 class HybridIndex:
-    """BM25 + TF-IDF cosine over a fixed set of chunks, filtered per user."""
+    """BM25 and TF-IDF cosine over a fixed set of chunks."""
 
     def __init__(self, chunks: Sequence[Chunk], k1: float = 1.5, b: float = 0.75):
         self.chunks = list(chunks)
@@ -181,7 +180,6 @@ class HybridIndex:
 
     def _accessible(self, user_groups: Sequence[str]) -> List[int]:
         allowed = set(user_groups)
-        # Fail closed: no metadata or no overlap => not a candidate.
         return [
             i
             for i, c in enumerate(self.chunks)
@@ -204,7 +202,9 @@ class HybridIndex:
                 if not f:
                     continue
                 idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
-                s += idf * (f * (self.k1 + 1)) / (f + self.k1 * (1 - self.b + self.b * dl / avgdl))
+                numerator = f * (self.k1 + 1)
+                denominator = f + self.k1 * (1 - self.b + self.b * dl / avgdl)
+                s += idf * numerator / denominator
             if s > 0:
                 scores[i] = s
         return scores
@@ -257,14 +257,12 @@ class HybridIndex:
                 i: s for i, s in combined.items() if q_set & set(self.chunks[i].tokens)
             }
 
-        # Drop weak co-matches so we only cite genuinely supporting passages.
         if combined:
             floor = max(combined.values()) * min_ratio
             combined = {i: s for i, s in combined.items() if s >= floor}
 
         ranked = sorted(combined.items(), key=lambda kv: kv[1], reverse=True)
 
-        # Prefer the latest source within a family (metadata-driven dedup).
         family_pos: Dict[str, int] = {}
         order: List[int] = []
         for i, score in ranked:
