@@ -1,4 +1,0 @@
-id,category,question,expected_behavior,expected_source,pass_condition
-1,source_lookup,Where is the cancellation rule?,answer_with_citation,policy_document,source_is_cited
-2,no_answer,What should happen when no source is found?,state_not_available,none,no_guessing
-3,version,Which guide version applies now?,prefer_latest_source,latest_version_document,version_is_named
