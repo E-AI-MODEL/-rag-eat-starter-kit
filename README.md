@@ -46,31 +46,44 @@ malformed, the run fails.
 
 ## What it does
 
-```
-            prompts/rag_assistant.eat
-                      │  (parsed + validated)
-                      ▼
-            EAT → system prompt  ─────────────┐
-                                              │
-   examples/corpus/*.md                       ▼
-        │  load + chunk                  ┌───────────┐
-        ▼                               │ Assistant │ → grounded answer + citations
-  access filter (fail-closed)  ──────▶  │           │     or an honest "I can't"
-        │                               └───────────┘
-        ▼                                     ▲
-  hybrid retrieve (BM25 + TF-IDF)             │
-        │  rerank + prefer latest version     │
-        └─────────────────────────────────────┘
-                      ▲
-            eval/rag_eval_set.csv  →  pass/fail report
+```mermaid
+flowchart TD
+    eat["prompts/rag_assistant.eat<br/>EAT behavior profile"]
+    validate["Parse + validate<br/>src/ragkit/eat_loader.py"]
+    prompt["Render system prompt"]
+
+    corpus["examples/corpus/*.md<br/>Markdown + front matter"]
+    chunks["Load corpus<br/>parse metadata + split sections"]
+    access["Access filter<br/>fail closed on allowed_groups"]
+    retrieve["Hybrid retrieve<br/>BM25 + TF-IDF"]
+    rank["Merge scores + threshold<br/>prefer latest version per family"]
+
+    assistant["Assistant<br/>src/ragkit/assistant.py"]
+    decision{"Supporting context?"}
+    answer["Grounded answer<br/>citations + optional LLM"]
+    abstain["Honest abstention<br/>no unsupported answer"]
+
+    eval["eval/rag_eval_set.csv"]
+    runner["Eval runner<br/>src/ragkit/eval_runner.py"]
+    report["Pass/fail report"]
+
+    eat --> validate --> prompt --> assistant
+    corpus --> chunks --> access --> retrieve --> rank --> assistant
+    eval --> runner --> assistant
+    assistant --> decision
+    decision -- yes --> answer --> report
+    decision -- no --> abstain --> report
+    runner --> report
 ```
 
 - **EAT-driven behavior** — `src/ragkit/eat_loader.py` validates the profile (header
   forms, exact `[n]` row counts, identifier cells) and renders the system prompt.
+- **Corpus loading** — `src/ragkit/retrieval.py` parses Markdown front matter, keeps
+  metadata such as `allowed_groups`, and splits documents into sections.
 - **Hybrid retrieval** — BM25 for exact terms/codes plus TF-IDF cosine for meaning,
-  merged and reranked (`src/ragkit/retrieval.py`). Pure standard library.
+  merged, thresholded, and reranked (`src/ragkit/retrieval.py`). Pure standard library.
 - **Fail-closed access control** — a document whose `allowed_groups` do not overlap the
-  user is never a candidate, so it can never leak into an answer.
+  user is filtered before scoring, so it can never leak into an answer.
 - **Grounded answering** — answers come only from retrieved context; when nothing
   supports the question the assistant abstains (`src/ragkit/assistant.py`).
 - **Real evaluation** — `eval/rag_eval_set.csv` is executed against the assistant and
@@ -100,10 +113,12 @@ The demo answers extractively so it runs offline. To use any LLM, pass a callabl
 the EAT system prompt and retrieved context are handed to you, provider-agnostic:
 
 ```python
-from ragkit import load_eat, load_corpus, HybridIndex
+from typing import List
+
+from ragkit import HybridIndex, load_corpus, load_eat
 from ragkit.assistant import Assistant
 
-def my_llm(system_prompt: str, question: str, context: list[str]) -> str:
+def my_llm(system_prompt: str, question: str, context: List[str]) -> str:
     # call your provider of choice with system_prompt + question + context
     ...
 
