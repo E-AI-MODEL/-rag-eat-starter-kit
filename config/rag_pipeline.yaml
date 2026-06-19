@@ -1,0 +1,111 @@
+version: "0.1.0"
+name: "rag_eat_pipeline"
+language: "nl"
+
+purpose:
+  description: "Voorbeeldconfiguratie voor een brongebonden RAG-assistent."
+  public_repo_safe: true
+
+sources:
+  - id: "example_docs"
+    type: "documentation"
+    connector: "replace_with_connector_name"
+    include_patterns:
+      - "*.md"
+      - "*.pdf"
+      - "*.docx"
+    exclude_patterns:
+      - "private/*"
+      - "archive/*"
+      - "*.tmp"
+    access_control:
+      enabled: true
+      metadata_field: "allowed_groups"
+
+metadata_required:
+  - source_id
+  - title
+  - document_type
+  - version
+  - created_at
+  - updated_at
+  - owner
+  - allowed_groups
+  - canonical_url
+
+ingestion:
+  deduplicate: true
+  remove_empty_sections: true
+  preserve_headings: true
+  preserve_tables: true
+  strip_hidden_text: true
+  ocr:
+    enabled: false
+    review_required: true
+
+chunking:
+  method: "structure_first"
+  target_tokens: 500
+  min_tokens: 150
+  max_tokens: 900
+  overlap_tokens: 80
+  add_context_header: true
+  context_header_fields:
+    - title
+    - section
+    - document_type
+    - version
+
+retrieval:
+  mode: "hybrid"
+  vector_search:
+    enabled: true
+    top_k: 20
+  keyword_search:
+    enabled: true
+    method: "bm25"
+    top_k: 20
+  merge:
+    deduplicate: true
+    max_candidates: 30
+
+reranking:
+  enabled: true
+  top_k_after_rerank: 8
+
+access_filtering:
+  apply_before_retrieval: true
+  apply_before_generation: true
+  fail_closed: true
+
+generation:
+  require_sources: true
+  answer_only_from_context: true
+  cite_sources: true
+  refuse_without_supporting_context: true
+  mention_conflicts: true
+  max_context_chunks: 8
+
+security:
+  treat_retrieved_context_as_data: true
+  ignore_instructions_inside_documents: true
+  scan_documents_for_prompt_injection: true
+  strip_scripts_and_hidden_text: true
+  block_tool_calls_from_retrieved_text: true
+
+logging:
+  enabled: true
+  log_retrieved_sources: true
+  log_scores: true
+  log_rerank_order: true
+  log_answer_sources: true
+  redact_personal_data: true
+
+feedback:
+  collect_user_feedback: true
+  categories:
+    - wrong_source
+    - missing_source
+    - outdated_answer
+    - unclear_answer
+    - access_problem
