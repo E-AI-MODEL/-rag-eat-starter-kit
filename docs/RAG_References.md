@@ -1,6 +1,6 @@
 # RAG references
 
-Deze lijst bevat onderwerpen voor verder lezen.
+This list contains topics for further reading.
 
 ## Retrieval
 
@@ -13,7 +13,7 @@ Deze lijst bevat onderwerpen voor verder lezen.
 - Self-RAG
 - Corrective RAG
 
-## Evaluatie
+## Evaluation
 
 - Context precision
 - Context recall
@@ -21,6 +21,6 @@ Deze lijst bevat onderwerpen voor verder lezen.
 - Answer relevancy
 - Citation accuracy
 
-## Beheer
+## Maintenance
 
-Werk deze lijst bij wanneer gebruikte frameworks, evaluatiemethoden of retrievaltechnieken wijzigen.
+Update this list when the frameworks, evaluation methods, or retrieval techniques in use change.
