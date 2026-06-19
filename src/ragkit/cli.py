@@ -99,8 +99,10 @@ def main(argv: list[str] | None = None, base_dir: str | None = None) -> int:
         return cmd_eval(base_dir)
     if cmd == "all":
         rc = cmd_validate(base_dir)
+        if rc != 0:
+            return rc
         print()
-        return cmd_eval(base_dir) or rc
+        return cmd_eval(base_dir)
 
     print(__doc__)
     return 2
