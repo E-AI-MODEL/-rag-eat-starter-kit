@@ -1,18 +1,18 @@
 ---
-name: Bronupdate
-about: Stel een update voor in bronnen of verwijzingen
+name: Source update
+about: Suggest an update to sources or references
 labels: documentation
 ---
 
-## Welke bron moet worden toegevoegd of bijgewerkt?
+## Which source should be added or updated?
 
 
-## Waarom?
+## Why?
 
 
-## Link of referentie
+## Link or reference
 
 
-## Opmerking
+## Note
 
-Gebruik alleen publieke bronnen.
+Use public sources only.
