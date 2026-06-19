@@ -16,11 +16,13 @@ import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Dict, List
 
 import yaml
 
 _TOKEN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---[ \t]*\n?", re.DOTALL)
 _STOPWORDS = {
     "the", "a", "an", "is", "are", "was", "were", "be", "what", "which", "who",
     "does", "do", "did", "of", "to", "for", "in", "on", "and", "or", "now",
@@ -80,12 +82,48 @@ def _split_sections(body: str) -> List[tuple[str, str]]:
 
 
 def _parse_frontmatter(raw: str) -> tuple[dict, str]:
-    if raw.startswith("---"):
-        end = raw.find("\n---", 3)
-        if end != -1:
-            meta = yaml.safe_load(raw[3:end]) or {}
-            return meta, raw[end + 4 :].lstrip("\n")
-    return {}, raw
+    """Parse YAML front matter only when it is a complete opening block.
+
+    Body content may contain Markdown horizontal rules (`---`) without confusing
+    the parser, because only the first complete front-matter block at the start
+    of the file is consumed.
+    """
+    match = _FRONTMATTER_RE.match(raw)
+    if not match:
+        return {}, raw
+
+    yaml_text = match.group(1)
+    body = raw[match.end():].lstrip("\n")
+    try:
+        meta = yaml.safe_load(yaml_text) or {}
+    except yaml.YAMLError:
+        return {}, body
+    if not isinstance(meta, dict):
+        return {}, body
+    return meta, body
+
+
+def _parse_date(value: object) -> str:
+    """Return an ISO date string or raise on invalid date metadata."""
+    if value in (None, ""):
+        return ""
+    if isinstance(value, datetime):
+        return value.date().isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+
+    text = str(value).strip()
+    if not text:
+        return ""
+    for fmt in ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M:%SZ"):
+        try:
+            return datetime.strptime(text, fmt).date().isoformat()
+        except ValueError:
+            continue
+    raise ValueError(
+        f"Invalid date format: {text!r}. Expected ISO 8601, for example "
+        "2024-01-15 or 2024-01-15T10:30:00Z."
+    )
 
 
 def load_corpus(corpus_dir: str) -> List[Chunk]:
@@ -98,6 +136,7 @@ def load_corpus(corpus_dir: str) -> List[Chunk]:
         groups = meta.get("allowed_groups") or []
         if isinstance(groups, str):
             groups = [groups]
+        updated_at = _parse_date(meta.get("updated_at"))
         for heading, text in _split_sections(body):
             chunks.append(
                 Chunk(
@@ -106,7 +145,7 @@ def load_corpus(corpus_dir: str) -> List[Chunk]:
                     section=heading,
                     text=text,
                     version=str(meta.get("version") or ""),
-                    updated_at=str(meta.get("updated_at") or ""),
+                    updated_at=updated_at,
                     family=str(meta.get("family") or source_id),
                     allowed_groups=[str(g) for g in groups],
                     tokens=tokenize(f"{meta.get('title', '')} {heading} {text}"),
@@ -119,9 +158,11 @@ def _minmax(scores: Dict[int, float]) -> Dict[int, float]:
     if not scores:
         return {}
     lo, hi = min(scores.values()), max(scores.values())
-    if hi - lo < 1e-12:
-        return {k: 1.0 for k in scores}
-    return {k: (v - lo) / (hi - lo) for k, v in scores.items()}
+    rng = hi - lo
+    if rng < 1e-12:
+        uniform = 1.0 / len(scores)
+        return {k: uniform for k in scores}
+    return {k: (v - lo) / rng for k, v in scores.items()}
 
 
 @dataclass
@@ -224,17 +265,20 @@ class HybridIndex:
         ranked = sorted(combined.items(), key=lambda kv: kv[1], reverse=True)
 
         # Prefer the latest source within a family (metadata-driven dedup).
-        best_in_family: Dict[str, int] = {}
+        family_pos: Dict[str, int] = {}
         order: List[int] = []
-        for i, _ in ranked:
+        for i, score in ranked:
             fam = self.chunks[i].family
-            prev = best_in_family.get(fam)
-            if prev is None:
-                best_in_family[fam] = i
+            pos = family_pos.get(fam)
+            if pos is None:
+                family_pos[fam] = len(order)
                 order.append(i)
-            elif self.chunks[i].updated_at > self.chunks[prev].updated_at:
-                # Replace the older family member already in the order.
-                order[order.index(prev)] = i
-                best_in_family[fam] = i
+                continue
+
+            prev = order[pos]
+            current_key = (self.chunks[i].updated_at, score)
+            previous_key = (self.chunks[prev].updated_at, combined[prev])
+            if current_key > previous_key:
+                order[pos] = i
 
         return [ScoredChunk(self.chunks[i], combined[i]) for i in order[:top_k]]
