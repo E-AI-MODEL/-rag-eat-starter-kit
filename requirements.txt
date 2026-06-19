@@ -1,0 +1,3 @@
+# Runtime dependencies for the runnable demo (run.py, tests).
+# Deliberately minimal and vendor-neutral: only a YAML parser is needed.
+PyYAML>=6.0

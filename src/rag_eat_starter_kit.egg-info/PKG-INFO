@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: rag-eat-starter-kit
+Version: 0.1.0
+Summary: A small, runnable, vendor-neutral RAG core driven by an EAT behavior profile.
+License: MIT
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: PyYAML>=6.0
+Provides-Extra: dev
+Requires-Dist: ruff>=0.6; extra == "dev"
+Provides-Extra: anthropic
+Requires-Dist: anthropic>=0.40; extra == "anthropic"
+Dynamic: license-file
+
 # RAG EAT Starter Kit
 
 [![CI](https://github.com/E-AI-MODEL/-rag-eat-starter-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/E-AI-MODEL/-rag-eat-starter-kit/actions/workflows/ci.yml)
