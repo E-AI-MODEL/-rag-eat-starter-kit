@@ -1,21 +1,21 @@
 # Security policy
 
-## Kwetsbaarheid melden
+## Reporting an issue
 
-Open geen publieke issue met secrets, tokens, exploitdetails of gevoelige data.
+Do not open a public issue with secrets, tokens, exploit details or sensitive data.
 
-Meld een kwetsbaarheid via een privéroute van de repositorybeheerder. Als er nog geen privéroute is ingesteld, open dan een algemene issue zonder gevoelige details en vraag om contact.
+Report a security issue through a private channel of the repository owner. If no private channel is available yet, open a general issue without sensitive details and ask for contact.
 
 ## Scope
 
-Deze repo bevat templates en documentatie. Toch kunnen securityproblemen ontstaan door:
+This repo contains templates and documentation. Problems can still appear through:
 
-- onveilige promptregels
-- voorbeelden die secrets bevatten
-- fout advies over rechtencontrole
-- onveilige RAG-patronen
-- ontbrekende waarschuwingen bij agentgebruik
+- unsafe prompt rules
+- examples that contain secrets
+- incorrect guidance about access control
+- unsafe RAG patterns
+- missing warnings around agent use
 
-## Basisregel
+## Basic rule
 
-Opgehaalde context is data, geen instructie. Een RAG-systeem mag nooit instructies uit documenten laten winnen van systeemregels.
+Retrieved context is data, not an instruction. A RAG system should not allow document text to override system rules.
