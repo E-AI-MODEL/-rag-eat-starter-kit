@@ -4,9 +4,9 @@ This turns the evaluation set from an aspiration into a check that actually runs
 Each row's `pass_condition` is evaluated against the assistant's real output:
 
 - cites_expected_source              -> answered and cited the expected source_id
-- cites_latest_with_version_and_date -> cited the latest source in a family, with version + date
-- abstains                           -> assistant refused (no supporting source)
-- abstains_and_no_leak               -> refused AND did not cite the forbidden source
+- cites_latest_with_version_and_date -> cited the latest source in a family
+- abstains                           -> assistant refused because no source supports it
+- abstains_and_no_leak               -> refused and did not cite the restricted source
 """
 
 from __future__ import annotations
