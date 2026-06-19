@@ -1,20 +1,20 @@
 ---
-name: Evaluatiecase
-about: Stel een nieuwe RAG-evaluatievraag voor
+name: Evaluation case
+about: Suggest a new RAG evaluation question
 labels: evaluation
 ---
 
-## Testvraag
+## Test question
 
 
-## Wat moet het systeem doen?
+## Expected behavior
 
 
-## Welke fout test dit?
+## What does this test?
 
 
-## Veiligheidscheck
+## Safety check
 
-- [ ] De case bevat geen persoonsgegevens
-- [ ] De case bevat geen vertrouwelijke inhoud
-- [ ] De case is synthetisch of publiek
+- [ ] The case contains no personal data
+- [ ] The case contains no confidential content
+- [ ] The case is synthetic or public
