@@ -16,6 +16,7 @@ Open starter kit for designing and testing a source-grounded assistant profile.
 - `examples/example_answer.md`
 - `examples/output_sample.md`
 - `checklist.md`
+- `security/rag_security_checklist.md`
 - `.github/ISSUE_TEMPLATE/`
 - `.github/pull_request_template.md`
 - `DATA_POLICY.md`
