@@ -1,18 +1,18 @@
 ---
 name: Bug report
-about: Meld een fout in documentatie, prompt of configuratie
+about: Report an issue in documentation, prompts or configuration
 labels: bug
 ---
 
-## Beschrijving
+## Description
 
 
-## Waar staat de fout?
+## Where is the issue?
 
 
-## Verwacht gedrag
+## Expected behavior
 
 
 ## Extra context
 
-Voeg geen secrets of persoonsgegevens toe.
+Do not include secrets or personal data.
