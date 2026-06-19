@@ -1,9 +1,9 @@
 version: "0.1.0"
 name: "rag_eat_pipeline"
-language: "nl"
+language: "en"
 
 purpose:
-  description: "Voorbeeldconfiguratie voor een brongebonden RAG-assistent."
+  description: "Example configuration for a source-grounded RAG assistant."
   public_repo_safe: true
 
 sources:
@@ -86,11 +86,10 @@ generation:
   mention_conflicts: true
   max_context_chunks: 8
 
-security:
+safety:
   treat_retrieved_context_as_data: true
   ignore_instructions_inside_documents: true
-  scan_documents_for_prompt_injection: true
-  strip_scripts_and_hidden_text: true
+  strip_hidden_text: true
   block_tool_calls_from_retrieved_text: true
 
 logging:
