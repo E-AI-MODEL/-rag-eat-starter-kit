@@ -1,7 +1,0 @@
-PyYAML>=6.0
-
-[anthropic]
-anthropic>=0.40
-
-[dev]
-ruff>=0.6

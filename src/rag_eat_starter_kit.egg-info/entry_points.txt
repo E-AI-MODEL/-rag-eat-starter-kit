@@ -1,2 +1,0 @@
-[console_scripts]
-rag-eat = ragkit.cli:main
