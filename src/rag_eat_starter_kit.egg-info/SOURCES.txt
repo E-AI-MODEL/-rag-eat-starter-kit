@@ -13,4 +13,5 @@ src/ragkit/cli.py
 src/ragkit/eat_loader.py
 src/ragkit/eval_runner.py
 src/ragkit/retrieval.py
+tests/test_edge_cases.py
 tests/test_ragkit.py
