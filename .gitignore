@@ -22,6 +22,15 @@ __pycache__/
 .venv/
 venv/
 
+# Build / packaging / tool caches
+build/
+dist/
+*.egg
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+
 # Node
 node_modules/
 
