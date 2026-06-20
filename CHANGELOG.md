@@ -5,6 +5,15 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Changed
+- Suppress Claude Code attribution in commits and pull requests
+  (`.claude/settings.json`) so project history stays clean and readable.
+
+### Removed
+- Stale, unreferenced example stubs (`examples/example_question.md`,
+  `examples/example_answer.md`, `examples/output_sample.md`) — superseded by the
+  runnable demo corpus and the LLM adapter example.
+
 ## [0.1.0] - 2026-06-20
 
 ### Added
