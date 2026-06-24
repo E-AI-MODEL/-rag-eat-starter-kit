@@ -4,12 +4,35 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A small, **runnable** starter kit for a source-grounded assistant whose behavior is
-defined by an [EAT](https://github.com/E-AI-MODEL/EAT) profile.
+## What is this?
 
-It is not just documentation: one command validates the behavior profile, runs a
-hybrid-retrieval RAG loop over a demo corpus with fail-closed access control, and
-scores itself against an evaluation set — locally, offline, with no API keys.
+This is a **working example of a question-answering assistant that only answers from
+documents you give it** — and says *"I don't know"* instead of guessing. Picture a
+help-desk bot that quotes your own manuals and policies, never invents an answer, and
+never shows a reader a document they aren't allowed to see.
+
+It runs on your own machine with **one command** — no account, no API key, no internet
+needed — so you can read every line and watch exactly how it behaves.
+
+**Who is it for?** Anyone who wants to understand or build a trustworthy document
+assistant: developers, students, and teams evaluating this kind of system. No prior
+background is assumed.
+
+Two terms you'll meet here, in plain language:
+
+- **RAG** (Retrieval-Augmented Generation) — the assistant first *retrieves* the
+  relevant passages from your documents, then answers *using only those passages*. That
+  is what keeps answers tied to real sources instead of made up.
+- **EAT** — a small, human-readable file that spells out the assistant's role, steps,
+  rules and safety limits. Instead of hiding the behavior inside a long prompt, it lives
+  in one file you can review like code. See
+  [docs/EAT_Construct_Explanation.md](docs/EAT_Construct_Explanation.md) and the
+  [EAT project](https://github.com/E-AI-MODEL/EAT).
+
+Under the hood, one command validates that behavior profile, runs the
+retrieve-then-answer loop over a small demo set of documents, enforces access control
+(a reader only sees sources their group is allowed to see), and scores itself against a
+fixed set of test questions — all locally, offline, with no API keys.
 
 ```bash
 pip install -r requirements.txt
@@ -80,8 +103,9 @@ flowchart TD
   forms, exact `[n]` row counts, identifier cells) and renders the system prompt.
 - **Corpus loading** — `src/ragkit/retrieval.py` parses Markdown front matter, keeps
   metadata such as `allowed_groups`, and splits documents into sections.
-- **Hybrid retrieval** — BM25 for exact terms/codes plus TF-IDF cosine for meaning,
-  merged, thresholded, and reranked (`src/ragkit/retrieval.py`). Pure standard library.
+- **Hybrid retrieval** — combines two ways of finding passages: BM25 (keyword matching,
+  good for exact terms and codes) plus TF-IDF cosine (meaning-based similarity), then
+  merges, thresholds and reranks them (`src/ragkit/retrieval.py`). Pure standard library.
 - **Fail-closed access control** — a document whose `allowed_groups` do not overlap the
   user is filtered before scoring, so it can never leak into an answer.
 - **Grounded answering** — answers come only from retrieved context; when nothing
