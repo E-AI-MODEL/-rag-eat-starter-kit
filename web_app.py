@@ -17,9 +17,10 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import streamlit as st
+import yaml
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -32,8 +33,20 @@ DEMO_DIR = ROOT / "examples" / "corpus"
 KNOWLEDGE_DIR = Path(os.environ.get("RAGKIT_CORPUS", ROOT / "knowledge"))
 EAT_PATH = Path(os.environ.get("RAGKIT_EAT", ROOT / "prompts" / "rag_assistant.eat"))
 
-_FRONTMATTER_RE = re.compile(r"^---\s*\n.*?\n---\s*\n", re.DOTALL)
+_FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 _SAFE_NAME_RE = re.compile(r"[^a-zA-Z0-9._-]+")
+
+EXAMPLE_QUESTIONS = {
+    "knowledge": [
+        "What does this starter kit do?",
+        "How should the assistant behave when the answer is missing?",
+    ],
+    "demo": [
+        "What are the cancellation conditions?",
+        "What does product code X-123 mean?",
+        "What is the internal pricing markup?",
+    ],
+}
 
 
 def parse_groups(value: Optional[str]) -> List[str]:
@@ -112,6 +125,35 @@ def markdown_files(folder: Path) -> List[Path]:
     return sorted(path for path in folder.glob("*.md") if path.is_file())
 
 
+def read_document(path: Path) -> Tuple[Dict[str, object], str]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    match = _FRONTMATTER_RE.match(text)
+    if not match:
+        return {}, text
+
+    try:
+        metadata = yaml.safe_load(match.group(1)) or {}
+    except yaml.YAMLError:
+        metadata = {}
+
+    if not isinstance(metadata, dict):
+        metadata = {}
+    body = text[match.end() :].lstrip("\n")
+    return metadata, body
+
+
+def corpus_stats(corpus_dir: Path) -> Tuple[int, int, Optional[str]]:
+    files = markdown_files(corpus_dir)
+    if not files:
+        return 0, 0, None
+
+    try:
+        chunks = load_corpus(str(corpus_dir))
+    except Exception as exc:  # noqa: BLE001
+        return len(files), 0, str(exc)
+    return len(files), len(chunks), None
+
+
 def build_assistant(corpus_dir: Path, groups: List[str]) -> Assistant:
     profile = load_eat(str(EAT_PATH))
     chunks = load_corpus(str(corpus_dir))
@@ -119,111 +161,178 @@ def build_assistant(corpus_dir: Path, groups: List[str]) -> Assistant:
     return Assistant(profile, index, groups)
 
 
-def render_sources(corpus_dir: Path) -> None:
+def render_status(corpus_name: str, corpus_dir: Path, groups: List[str]) -> None:
+    file_count, chunk_count, error = corpus_stats(corpus_dir)
+    cols = st.columns(4)
+    cols[0].metric("Corpus", corpus_name)
+    cols[1].metric("Documents", file_count)
+    cols[2].metric("Chunks", chunk_count)
+    cols[3].metric("Groups", len(groups))
+
+    if error:
+        st.warning(f"Could not load this corpus: {error}")
+
+
+def render_upload(saved_key: str, groups: List[str]) -> None:
+    st.subheader("Upload documents")
+    st.caption(
+        "Supported: `.md`, `.markdown` and `.txt`. Files are saved locally in "
+        "`knowledge/` and ignored by Git by default."
+    )
+    uploaded_files = st.file_uploader(
+        "Choose files",
+        type=["md", "markdown", "txt"],
+        accept_multiple_files=True,
+    )
+
+    if st.button("Save to knowledge/", disabled=not uploaded_files):
+        saved = save_uploads(uploaded_files or [], groups)
+        st.session_state[saved_key] = [path.name for path in saved]
+        if saved:
+            st.rerun()
+
+    saved_names = st.session_state.get(saved_key, [])
+    if saved_names:
+        st.success("Saved: " + ", ".join(saved_names))
+
+
+def render_source_cards(corpus_dir: Path) -> None:
     files = markdown_files(corpus_dir)
     st.subheader("Sources")
     st.caption(f"Folder: `{corpus_dir}`")
 
     if not files:
-        st.info("No Markdown files found yet.")
+        st.info("No Markdown files found yet. Upload a file or use the demo corpus.")
         return
 
     for path in files:
-        with st.expander(path.name):
-            text = path.read_text(encoding="utf-8", errors="replace")
-            st.code(text[:4000], language="markdown")
-            if len(text) > 4000:
+        metadata, body = read_document(path)
+        title = str(metadata.get("title") or path.stem)
+        source_id = str(metadata.get("source_id") or path.stem)
+        groups = metadata.get("allowed_groups") or []
+        updated = metadata.get("updated_at") or "n/a"
+
+        with st.expander(f"{title} ({path.name})"):
+            cols = st.columns(3)
+            cols[0].caption(f"Source ID: `{source_id}`")
+            cols[1].caption(f"Updated: `{updated}`")
+            cols[2].caption(f"Groups: `{groups}`")
+            st.code(body[:4000], language="markdown")
+            if len(body) > 4000:
                 st.caption("Preview truncated after 4000 characters.")
+
+
+def set_example_question(question: str) -> None:
+    st.session_state.question = question
+
+
+def render_question_page(corpus_name: str, corpus_dir: Path, groups: List[str]) -> None:
+    st.subheader("Ask a question")
+    st.caption(f"Active source folder: `{corpus_dir}`")
+
+    file_count, _, error = corpus_stats(corpus_dir)
+    if file_count == 0:
+        st.info("Start by uploading a document, or switch to the demo corpus in the sidebar.")
+    if error:
+        st.stop()
+
+    examples = EXAMPLE_QUESTIONS.get(corpus_name, [])
+    if examples:
+        st.markdown("Try an example question:")
+        cols = st.columns(len(examples))
+        for index, question in enumerate(examples):
+            cols[index].button(
+                question,
+                key=f"example_{corpus_name}_{index}",
+                on_click=set_example_question,
+                args=(question,),
+            )
+
+    if "question" not in st.session_state:
+        st.session_state.question = examples[0] if examples else ""
+
+    question = st.text_input("Question", key="question")
+    if st.button("Answer question", type="primary", disabled=not question.strip()):
+        try:
+            assistant = build_assistant(corpus_dir, groups)
+            result = assistant.answer(question.strip())
+        except Exception as exc:  # noqa: BLE001
+            st.error(f"Could not process the question: {exc}")
+            return
+
+        st.markdown("### Answer")
+        st.write(result.answer)
+
+        if result.abstained:
+            st.info("No matching accessible source was found, so the assistant did not guess.")
+        elif result.citations:
+            st.markdown("### Sources used")
+            for hit in result.citations:
+                st.write(f"- {hit.chunk.citation()} - score {hit.score:.3f}")
+
+
+def render_how_it_works() -> None:
+    st.subheader("How it works")
+    st.markdown(
+        """
+1. Add Markdown or text files to `knowledge/`, or upload them with the sidebar.
+2. Ask a question.
+3. The app retrieves matching passages first.
+4. Access control is applied before answering.
+5. If there is no matching accessible source, the assistant refuses to guess.
+"""
+    )
+
+    st.subheader("Where does this website run?")
+    st.markdown(
+        """
+This is a local Streamlit app. When you run `bash start.sh`, the web server starts in
+that terminal session and opens in your browser, normally at `http://localhost:8501`.
+
+If someone runs it in their own fork, local clone or Codespace, uploads stay in that
+environment. They are not sent to the original repository automatically.
+
+It is not a public website unless you deploy it yourself on a server or hosting platform.
+"""
+    )
 
 
 def main() -> None:
     st.set_page_config(page_title="RAG EAT Starter Kit", page_icon="📄", layout="wide")
     st.title("RAG EAT Starter Kit")
-    st.caption("A small local web interface on top of the existing starter kit.")
-
-    groups = parse_groups(os.environ.get("RAGKIT_USER_GROUPS"))
+    st.caption("A local beginner web interface for grounded document Q&A.")
 
     with st.sidebar:
         st.header("Menu")
-        page = st.radio("Go to", ["Ask a question", "Sources", "How it works"])
-        corpus_choice = st.radio(
+        page = st.radio("Go to", ["Ask", "Sources", "How it works"])
+        corpus_name = st.radio(
             "Corpus",
             ["knowledge", "demo"],
-            help="Use knowledge for your own documents and demo for the included sample data.",
+            help="Use knowledge for your own documents and demo for the sample data.",
         )
-        corpus_dir = KNOWLEDGE_DIR if corpus_choice == "knowledge" else DEMO_DIR
+        corpus_dir = KNOWLEDGE_DIR if corpus_name == "knowledge" else DEMO_DIR
 
         st.divider()
-        st.subheader("Upload documents")
-        st.caption("Uploads are saved locally in `knowledge/` and ignored by Git by default.")
-        uploaded_files = st.file_uploader(
-            "Upload Markdown or text",
-            type=["md", "markdown", "txt"],
-            accept_multiple_files=True,
+        group_text = st.text_input(
+            "Current user groups",
+            value=os.environ.get("RAGKIT_USER_GROUPS", "public,support"),
+            help="Comma-separated groups used for access filtering.",
         )
-        if st.button("Save to knowledge/", disabled=not uploaded_files):
-            saved = save_uploads(uploaded_files or [], groups)
-            if saved:
-                st.success("Saved: " + ", ".join(path.name for path in saved))
-                st.rerun()
+        groups = parse_groups(group_text)
+        st.caption("Active groups: " + ", ".join(groups))
 
         st.divider()
-        st.subheader("Access")
-        st.caption("Current groups: " + ", ".join(groups))
+        render_upload("saved_uploads", groups)
 
-    if page == "Ask a question":
-        st.subheader("Ask a question")
-        st.caption(f"Active source folder: `{corpus_dir}`")
+    render_status(corpus_name, corpus_dir, groups)
+    st.divider()
 
-        files = markdown_files(corpus_dir)
-        if not files:
-            st.warning("This source folder does not contain Markdown files yet.")
-
-        question = st.text_input(
-            "Question",
-            placeholder="For example: What are the cancellation conditions?",
-        )
-        if st.button("Answer question", type="primary", disabled=not question.strip()):
-            try:
-                assistant = build_assistant(corpus_dir, groups)
-                result = assistant.answer(question.strip())
-            except Exception as exc:  # noqa: BLE001
-                st.error(f"Could not process the question: {exc}")
-                return
-
-            st.markdown("### Answer")
-            st.write(result.answer)
-
-            if result.abstained:
-                st.info(
-                    "The assistant found no matching accessible source, "
-                    "so it refused to guess."
-                )
-            elif result.citations:
-                st.markdown("### Sources used")
-                for hit in result.citations:
-                    st.write(f"- {hit.chunk.citation()} - score {hit.score:.3f}")
-
+    if page == "Ask":
+        render_question_page(corpus_name, corpus_dir, groups)
     elif page == "Sources":
-        render_sources(corpus_dir)
-
+        render_source_cards(corpus_dir)
     else:
-        st.subheader("How it works")
-        st.markdown(
-            """
-1. Put your own Markdown or text files in `knowledge/`, or upload them with the button
-   on the left.
-2. Ask a question.
-3. The app retrieves matching passages first.
-4. Only accessible sources can be used in the answer.
-5. If there is no matching source, the assistant says it cannot answer reliably from
-   the retrieved sources.
-
-Uploads are saved in the environment where the app runs. If someone uses a fork,
-local clone or Codespace, the files stay there. They are not added to the original
-repository automatically.
-"""
-        )
+        render_how_it_works()
 
 
 if __name__ == "__main__":
