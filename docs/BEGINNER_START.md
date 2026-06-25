@@ -7,17 +7,10 @@ This page is for people who want to try the RAG starter kit without typing many 
 From the repository root:
 
 ```bash
-./start.sh
+bash start.sh
 ```
 
 The script creates a local Python environment, installs the small set of dependencies, validates the EAT profile, and starts the web app.
-
-If your terminal says that `start.sh` is not executable, run this once:
-
-```bash
-chmod +x start.sh
-./start.sh
-```
 
 ## Add your own documents
 
@@ -76,7 +69,7 @@ public,support
 You can override them before starting the app:
 
 ```bash
-RAGKIT_USER_GROUPS="public,support,finance" ./start.sh
+RAGKIT_USER_GROUPS="public,support,finance" bash start.sh
 ```
 
 Only documents with a matching `allowed_groups` value can be retrieved.
