@@ -76,16 +76,25 @@ cd rag-eat-starter-kit
 
 The extra `rag-eat-starter-kit` at the end gives the local folder a normal name.
 
-### 3. Start the web app
+### 3. Run the basic check
+
+```bash
+pip install -r requirements.txt
+python3 run.py
+```
+
+If this passes, the terminal demo is working.
+
+### 4. Start the web app
 
 ```bash
 bash start.sh
 ```
 
 This creates a local Python environment, installs the web dependency, validates the EAT
-profile, and starts the local web app.
+profile again, and starts the local web app.
 
-### 4. Open the app
+### 5. Open the app
 
 Streamlit normally opens your browser automatically. If it does not, open:
 
@@ -96,7 +105,7 @@ http://localhost:8501
 This is a local website running on your own machine. It is not GitHub Pages and it is
 not public on the internet.
 
-### 5. Try the included demo
+### 6. Try the included demo
 
 In the sidebar, set **Corpus** to `demo` and click one of the example questions, or ask:
 
@@ -104,7 +113,7 @@ In the sidebar, set **Corpus** to `demo` and click one of the example questions,
 What are the cancellation conditions?
 ```
 
-### 6. Try your own documents
+### 7. Try your own documents
 
 In the sidebar, set **Corpus** to `knowledge`, upload a `.txt`, `.md` or `.markdown`
 file, then ask a question about it.
@@ -112,24 +121,17 @@ file, then ask a question about it.
 Uploads are saved in your own local clone, fork, or Codespace. They are not sent to the
 original repository automatically.
 
-### 7. Already ran the basic commands?
+### Already cloned and ran the basic check?
 
-If you already ran:
-
-```bash
-pip install -r requirements.txt
-python3 run.py
-```
-
-then the demo is working. Next, run:
+Then skip straight to:
 
 ```bash
 bash start.sh
 ```
 
-Then use the web app instead of typing every `python3 run.py ask "..."` command by hand.
+Use the web app instead of typing every `python3 run.py ask "..."` command by hand.
 
-### 8. Want the terminal-only path?
+### Want the terminal-only path?
 
 ```bash
 python3 run.py validate
