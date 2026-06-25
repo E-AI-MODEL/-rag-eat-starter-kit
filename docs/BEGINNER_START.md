@@ -12,6 +12,22 @@ bash start.sh
 
 The script creates a local Python environment, installs the small set of dependencies, validates the EAT profile, and starts the web app.
 
+## Where does the web app run?
+
+It runs locally.
+
+When you run `bash start.sh`, Streamlit starts a small web server from that terminal session. It normally opens in your browser at:
+
+```text
+http://localhost:8501
+```
+
+That means the app runs on your own machine, not on GitHub Pages and not on a public website.
+
+If someone runs it in their own fork, local clone or Codespace, the app and uploads live in that environment. They are not sent to the original `E-AI-MODEL/-rag-eat-starter-kit` repository automatically.
+
+To make it public, you would need to deploy it yourself on a server or hosting platform that can run Python.
+
 ## Add your own documents
 
 Open the web app and use the upload button in the sidebar.
@@ -66,7 +82,7 @@ The default user groups are:
 public,support
 ```
 
-You can override them before starting the app:
+You can change them in the web app sidebar, or override them before starting the app:
 
 ```bash
 RAGKIT_USER_GROUPS="public,support,finance" bash start.sh
