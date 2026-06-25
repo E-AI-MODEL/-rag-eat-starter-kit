@@ -100,7 +100,7 @@ def save_uploads(uploaded_files, groups: List[str]) -> List[Path]:
         raw = uploaded.getvalue().decode("utf-8", errors="replace")
         stem = safe_stem(uploaded.name)
         path = unique_path(KNOWLEDGE_DIR, f"{stem}.md")
-        content = markdown_with_frontmatter(uploaded.name, raw, groups)
+        content = markdown_with_frontmatter(path.name, raw, groups)
         path.write_text(content, encoding="utf-8")
         saved.append(path)
     return saved
