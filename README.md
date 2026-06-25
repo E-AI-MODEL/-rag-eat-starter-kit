@@ -289,6 +289,7 @@ A complete, runnable version of this wiring lives in
 
 ```bash
 pip install ".[anthropic]"
+export ANTHROPIC_API_KEY="your-api-key-here"
 python3 examples/llm_anthropic_adapter.py "What are the cancellation conditions?"
 ```
 
