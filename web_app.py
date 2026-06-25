@@ -17,7 +17,7 @@ import re
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 import streamlit as st
 
@@ -36,7 +36,7 @@ _FRONTMATTER_RE = re.compile(r"^---\s*\n.*?\n---\s*\n", re.DOTALL)
 _SAFE_NAME_RE = re.compile(r"[^a-zA-Z0-9._-]+")
 
 
-def parse_groups(value: str | None) -> List[str]:
+def parse_groups(value: Optional[str]) -> List[str]:
     if not value:
         return DEFAULT_GROUPS
     groups = [item.strip() for item in value.split(",") if item.strip()]
@@ -100,7 +100,8 @@ def save_uploads(uploaded_files, groups: List[str]) -> List[Path]:
         raw = uploaded.getvalue().decode("utf-8", errors="replace")
         stem = safe_stem(uploaded.name)
         path = unique_path(KNOWLEDGE_DIR, f"{stem}.md")
-        path.write_text(markdown_with_frontmatter(uploaded.name, raw, groups), encoding="utf-8")
+        content = markdown_with_frontmatter(uploaded.name, raw, groups)
+        path.write_text(content, encoding="utf-8")
         saved.append(path)
     return saved
 
@@ -178,7 +179,10 @@ def main() -> None:
         if not files:
             st.warning("This source folder does not contain Markdown files yet.")
 
-        question = st.text_input("Question", placeholder="For example: What are the cancellation conditions?")
+        question = st.text_input(
+            "Question",
+            placeholder="For example: What are the cancellation conditions?",
+        )
         if st.button("Answer question", type="primary", disabled=not question.strip()):
             try:
                 assistant = build_assistant(corpus_dir, groups)
@@ -192,12 +196,13 @@ def main() -> None:
 
             if result.abstained:
                 st.info(
-                    "The assistant found no matching accessible source, so it refused to guess."
+                    "The assistant found no matching accessible source, "
+                    "so it refused to guess."
                 )
             elif result.citations:
                 st.markdown("### Sources used")
                 for hit in result.citations:
-                    st.write(f"- {hit.chunk.citation()} — score {hit.score:.3f}")
+                    st.write(f"- {hit.chunk.citation()} - score {hit.score:.3f}")
 
     elif page == "Sources":
         render_sources(corpus_dir)
@@ -206,14 +211,17 @@ def main() -> None:
         st.subheader("How it works")
         st.markdown(
             """
-1. Put your own Markdown or text files in `knowledge/`, or upload them with the button on the left.
+1. Put your own Markdown or text files in `knowledge/`, or upload them with the button
+   on the left.
 2. Ask a question.
 3. The app retrieves matching passages first.
 4. Only accessible sources can be used in the answer.
-5. If there is no matching source, the assistant says it cannot answer reliably from the retrieved sources.
+5. If there is no matching source, the assistant says it cannot answer reliably from
+   the retrieved sources.
 
 Uploads are saved in the environment where the app runs. If someone uses a fork,
-local clone or Codespace, the files stay there. They are not added to the original repository automatically.
+local clone or Codespace, the files stay there. They are not added to the original
+repository automatically.
 """
         )
 
