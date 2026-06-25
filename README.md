@@ -64,10 +64,13 @@ Use this path if you are new to terminal-based projects or just want to see the 
 
 ### 1. Open a terminal
 
-On macOS, open **Terminal**. On Windows, use **PowerShell**, **Git Bash**, or a terminal
-inside VS Code.
+- macOS or Linux: open **Terminal**.
+- Windows with WSL or Git Bash: use the Bash commands below.
+- Windows PowerShell: use the PowerShell commands below.
 
 ### 2. Clone the repository
+
+For macOS, Linux, WSL, Git Bash and PowerShell:
 
 ```bash
 git clone https://github.com/E-AI-MODEL/-rag-eat-starter-kit.git rag-eat-starter-kit
@@ -78,17 +81,40 @@ The extra `rag-eat-starter-kit` at the end gives the local folder a normal name.
 
 ### 3. Run the basic check
 
+macOS, Linux, WSL or Git Bash:
+
 ```bash
 pip install -r requirements.txt
 python3 run.py
+```
+
+Windows PowerShell:
+
+```powershell
+py -3 -m pip install -r requirements.txt
+py -3 run.py
 ```
 
 If this passes, the terminal demo is working.
 
 ### 4. Start the web app
 
+macOS, Linux, WSL or Git Bash:
+
 ```bash
 bash start.sh
+```
+
+Windows PowerShell:
+
+```powershell
+.\start.ps1
+```
+
+If PowerShell blocks local scripts on your machine, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
 This creates a local Python environment, installs the web dependency, validates the EAT
@@ -123,21 +149,38 @@ original repository automatically.
 
 ### Already cloned and ran the basic check?
 
-Then skip straight to:
+Then skip straight to the right startup command for your shell:
 
 ```bash
 bash start.sh
+```
+
+or, in Windows PowerShell:
+
+```powershell
+.\start.ps1
 ```
 
 Use the web app instead of typing every `python3 run.py ask "..."` command by hand.
 
 ### Want the terminal-only path?
 
+macOS, Linux, WSL or Git Bash:
+
 ```bash
 python3 run.py validate
 python3 run.py prompt
 python3 run.py ask "What are the cancellation conditions?"
 python3 run.py eval
+```
+
+Windows PowerShell:
+
+```powershell
+py -3 run.py validate
+py -3 run.py prompt
+py -3 run.py ask "What are the cancellation conditions?"
+py -3 run.py eval
 ```
 
 For a slower walkthrough, read [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
@@ -206,6 +249,8 @@ flowchart TD
 | `python3 run.py prompt` | print the system prompt rendered from the profile |
 | `python3 run.py ask "..."` | ask the demo assistant a single question |
 | `python3 run.py eval` | run the evaluation set and report pass/fail |
+| `bash start.sh` | start the local web app on macOS, Linux, WSL or Git Bash |
+| `.\start.ps1` | start the local web app on Windows PowerShell |
 | `python3 -m unittest discover -s tests -p "test_*.py"` | run the unit tests |
 
 `make help` lists the same as `make` targets. The package is also pip-installable
@@ -265,7 +310,8 @@ front-matter shown in [`examples/corpus/README.md`](examples/corpus/README.md), 
 ### Runnable core
 - `run.py`: one entry point for every command.
 - `web_app.py`: optional local Streamlit interface for beginners.
-- `start.sh`: starts the local web interface with one command.
+- `start.sh`: starts the local web interface on macOS, Linux, WSL or Git Bash.
+- `start.ps1`: starts the local web interface on Windows PowerShell.
 - `src/ragkit/`: the package: `eat_loader`, `retrieval`, `assistant`, `eval_runner`.
 - `knowledge/`: local document folder used by the beginner web app.
 - `examples/corpus/`: synthetic demo knowledge base with access metadata.
