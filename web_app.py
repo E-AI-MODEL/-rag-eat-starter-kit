@@ -120,11 +120,11 @@ def build_assistant(corpus_dir: Path, groups: List[str]) -> Assistant:
 
 def render_sources(corpus_dir: Path) -> None:
     files = markdown_files(corpus_dir)
-    st.subheader("Bronnen")
-    st.caption(f"Map: `{corpus_dir}`")
+    st.subheader("Sources")
+    st.caption(f"Folder: `{corpus_dir}`")
 
     if not files:
-        st.info("Nog geen Markdown-bestanden gevonden.")
+        st.info("No Markdown files found yet.")
         return
 
     for path in files:
@@ -132,82 +132,88 @@ def render_sources(corpus_dir: Path) -> None:
             text = path.read_text(encoding="utf-8", errors="replace")
             st.code(text[:4000], language="markdown")
             if len(text) > 4000:
-                st.caption("Voorbeeld afgekapt na 4000 tekens.")
+                st.caption("Preview truncated after 4000 characters.")
 
 
 def main() -> None:
     st.set_page_config(page_title="RAG EAT Starter Kit", page_icon="📄", layout="wide")
     st.title("RAG EAT Starter Kit")
-    st.caption("Een kleine lokale webinterface bovenop de bestaande starter kit.")
+    st.caption("A small local web interface on top of the existing starter kit.")
 
     groups = parse_groups(os.environ.get("RAGKIT_USER_GROUPS"))
 
     with st.sidebar:
         st.header("Menu")
-        page = st.radio("Ga naar", ["Vraag stellen", "Bronnen", "Uitleg"])
-        corpus_choice = st.radio("Corpus", ["knowledge", "demo"], help="Gebruik knowledge voor eigen documenten en demo voor de meegeleverde voorbeelddata.")
+        page = st.radio("Go to", ["Ask a question", "Sources", "How it works"])
+        corpus_choice = st.radio(
+            "Corpus",
+            ["knowledge", "demo"],
+            help="Use knowledge for your own documents and demo for the included sample data.",
+        )
         corpus_dir = KNOWLEDGE_DIR if corpus_choice == "knowledge" else DEMO_DIR
 
         st.divider()
-        st.subheader("Documenten uploaden")
-        st.caption("Uploads worden lokaal opgeslagen in `knowledge/` en standaard niet gecommit naar Git.")
+        st.subheader("Upload documents")
+        st.caption("Uploads are saved locally in `knowledge/` and ignored by Git by default.")
         uploaded_files = st.file_uploader(
-            "Upload Markdown of tekst",
+            "Upload Markdown or text",
             type=["md", "markdown", "txt"],
             accept_multiple_files=True,
         )
-        if st.button("Opslaan in knowledge/", disabled=not uploaded_files):
+        if st.button("Save to knowledge/", disabled=not uploaded_files):
             saved = save_uploads(uploaded_files or [], groups)
             if saved:
-                st.success("Opgeslagen: " + ", ".join(path.name for path in saved))
+                st.success("Saved: " + ", ".join(path.name for path in saved))
                 st.rerun()
 
         st.divider()
-        st.subheader("Toegang")
-        st.caption("Huidige groepen: " + ", ".join(groups))
+        st.subheader("Access")
+        st.caption("Current groups: " + ", ".join(groups))
 
-    if page == "Vraag stellen":
-        st.subheader("Vraag stellen")
-        st.caption(f"Actieve bronmap: `{corpus_dir}`")
+    if page == "Ask a question":
+        st.subheader("Ask a question")
+        st.caption(f"Active source folder: `{corpus_dir}`")
 
         files = markdown_files(corpus_dir)
         if not files:
-            st.warning("Deze bronmap bevat nog geen Markdown-bestanden.")
+            st.warning("This source folder does not contain Markdown files yet.")
 
-        question = st.text_input("Vraag", placeholder="Bijvoorbeeld: What are the cancellation conditions?")
-        if st.button("Beantwoord vraag", type="primary", disabled=not question.strip()):
+        question = st.text_input("Question", placeholder="For example: What are the cancellation conditions?")
+        if st.button("Answer question", type="primary", disabled=not question.strip()):
             try:
                 assistant = build_assistant(corpus_dir, groups)
                 result = assistant.answer(question.strip())
             except Exception as exc:  # noqa: BLE001
-                st.error(f"Kon de vraag niet verwerken: {exc}")
+                st.error(f"Could not process the question: {exc}")
                 return
 
-            st.markdown("### Antwoord")
+            st.markdown("### Answer")
             st.write(result.answer)
 
             if result.abstained:
-                st.info("De assistant heeft geen passende toegankelijke bron gevonden en weigert daarom te gokken.")
+                st.info(
+                    "The assistant found no matching accessible source, so it refused to guess."
+                )
             elif result.citations:
-                st.markdown("### Gebruikte bronnen")
+                st.markdown("### Sources used")
                 for hit in result.citations:
                     st.write(f"- {hit.chunk.citation()} — score {hit.score:.3f}")
 
-    elif page == "Bronnen":
+    elif page == "Sources":
         render_sources(corpus_dir)
 
     else:
-        st.subheader("Hoe werkt dit?")
+        st.subheader("How it works")
         st.markdown(
             """
-1. Zet eigen Markdown- of tekstbestanden in `knowledge/`, of upload ze via de knop links.
-2. Stel een vraag.
-3. De app zoekt eerst passende stukken tekst.
-4. Alleen toegankelijke bronnen mogen in het antwoord komen.
-5. Als er geen passende bron is, zegt de assistant dat hij het niet betrouwbaar kan beantwoorden.
+1. Put your own Markdown or text files in `knowledge/`, or upload them with the button on the left.
+2. Ask a question.
+3. The app retrieves matching passages first.
+4. Only accessible sources can be used in the answer.
+5. If there is no matching source, the assistant says it cannot answer reliably from the retrieved sources.
 
-Uploads worden opgeslagen in de omgeving waarin de app draait. Draait iemand dit in een eigen fork,
-lokale clone of Codespace, dan komen die bestanden daar terecht. Ze komen niet automatisch in deze originele repo.
+Uploads are saved in the environment where the app runs. If someone uses a fork,
+local clone or Codespace, the files stay there. They are not added to the original repository automatically.
 """
         )
 
