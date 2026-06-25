@@ -16,6 +16,12 @@ private/
 *.sqlite
 *.db
 
+# Local knowledge uploads
+# Keep the included examples, but do not commit private uploaded documents by accident.
+knowledge/*.md
+!knowledge/README.md
+!knowledge/example.md
+
 # Python
 __pycache__/
 *.pyc
