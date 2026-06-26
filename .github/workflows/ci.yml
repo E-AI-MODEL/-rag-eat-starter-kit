@@ -17,11 +17,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install (editable) with dev tools
-        run: pip install -e ".[dev]"
+      - name: Install package with quality-gate extras
+        run: pip install -e ".[dev,web,anthropic]"
       - name: Lint
         run: ruff check .
       - name: Validate EAT profile and run the eval set
         run: python3 run.py
       - name: Unit tests
         run: python3 -m unittest discover -s tests -p "test_*.py" -v
+      - name: Compile importable Python files
+        run: python3 -m compileall run.py web_app.py examples src tests
+      - name: Build package distributions
+        run: python3 -m build
