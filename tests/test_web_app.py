@@ -4,9 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-import yaml
-
 import web_app
+import yaml
 
 
 class WebAppHelperTests(unittest.TestCase):
