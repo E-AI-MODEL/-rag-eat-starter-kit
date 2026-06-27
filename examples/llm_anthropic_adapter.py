@@ -14,7 +14,8 @@ from __future__ import annotations
 
 import os
 import sys
-from typing import List
+from collections.abc import Mapping
+from typing import List, Optional
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
@@ -22,14 +23,34 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 from ragkit import HybridIndex, load_corpus, load_eat  # noqa: E402
 from ragkit.assistant import Assistant  # noqa: E402
 
-MODEL = os.environ.get("RAGKIT_MODEL", "claude-opus-4-8")
+DEFAULT_MODEL = "claude-opus-4-8"
+_PLACEHOLDER_KEYS = {"...", "your-api-key-here", "replace-me"}
 
 
-def make_anthropic_llm(model: str = MODEL):
+def model_from_env(env: Mapping[str, str] = os.environ) -> str:
+    """Return the configured Anthropic model name."""
+    return env.get("RAGKIT_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+
+
+def require_anthropic_api_key(env: Mapping[str, str] = os.environ) -> str:
+    """Fail early with a clear message when the SDK credential is missing."""
+    key = env.get("ANTHROPIC_API_KEY", "").strip()
+    if not key or key.lower() in _PLACEHOLDER_KEYS:
+        raise RuntimeError(
+            "Set ANTHROPIC_API_KEY in your shell before running this example. "
+            "For example: export ANTHROPIC_API_KEY=..."
+        )
+    return key
+
+
+def make_anthropic_llm(model: Optional[str] = None):
     """Return an `llm` callable backed by the Anthropic Messages API."""
+    require_anthropic_api_key()
+
     import anthropic
 
     client = anthropic.Anthropic()
+    selected_model = model or model_from_env()
 
     def llm(system_prompt: str, question: str, context: List[str]) -> str:
         joined = "\n\n---\n\n".join(context)
@@ -38,7 +59,7 @@ def make_anthropic_llm(model: str = MODEL):
             f"{joined}\n\nQuestion: {question}"
         )
         message = client.messages.create(
-            model=model,
+            model=selected_model,
             max_tokens=1024,
             system=system_prompt,
             messages=[{"role": "user", "content": user}],

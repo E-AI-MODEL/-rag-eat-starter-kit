@@ -1,7 +1,7 @@
 name: Release
 
 # Cuts a tagged GitHub Release from main. Runs on GitHub Actions, where GITHUB_TOKEN
-# has contents:write — so it can create the tag and release without a local push.
+# has contents:write, so it can create the tag and release without a local push.
 on:
   workflow_dispatch:
     inputs:
@@ -25,13 +25,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install
-        run: pip install -e ".[dev]"
+      - name: Install package with quality-gate extras
+        run: pip install -e ".[dev,web,anthropic]"
       - name: Verify before releasing
         run: |
           ruff check .
           python3 run.py
-          python3 -m unittest discover -s tests -p "test_*.py"
+          python3 -m unittest discover -s tests -p "test_*.py" -v
+          python3 -m compileall run.py web_app.py examples src tests
+          python3 -m build
       - name: Resolve version
         id: ver
         run: |

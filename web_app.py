@@ -11,7 +11,6 @@ original repository by accident.
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import sys
@@ -35,6 +34,7 @@ EAT_PATH = Path(os.environ.get("RAGKIT_EAT", ROOT / "prompts" / "rag_assistant.e
 
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 _SAFE_NAME_RE = re.compile(r"[^a-zA-Z0-9._-]+")
+_GROUP_RE = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$")
 
 EXAMPLE_QUESTIONS = {
     "knowledge": [
@@ -49,11 +49,29 @@ EXAMPLE_QUESTIONS = {
 }
 
 
+def normalize_groups(groups: Iterable[str]) -> List[str]:
+    """Return validated group names for access filtering."""
+    clean: List[str] = []
+    seen = set()
+    for raw in groups:
+        group = raw.strip()
+        if not group:
+            continue
+        if not _GROUP_RE.match(group):
+            raise ValueError(
+                "Group names may only contain letters, numbers, dots, underscores "
+                f"and hyphens: {group!r}"
+            )
+        if group not in seen:
+            clean.append(group)
+            seen.add(group)
+    return clean or list(DEFAULT_GROUPS)
+
+
 def parse_groups(value: Optional[str]) -> List[str]:
     if not value:
-        return DEFAULT_GROUPS
-    groups = [item.strip() for item in value.split(",") if item.strip()]
-    return groups or DEFAULT_GROUPS
+        return list(DEFAULT_GROUPS)
+    return normalize_groups(value.split(","))
 
 
 def safe_stem(name: str) -> str:
@@ -79,27 +97,24 @@ def markdown_with_frontmatter(filename: str, text: str, groups: Iterable[str]) -
     if _FRONTMATTER_RE.match(text):
         return text
 
+    valid_groups = normalize_groups(groups)
     stem = safe_stem(filename)
     title = Path(filename).stem.replace("_", " ").replace("-", " ").strip() or stem
     today = date.today().isoformat()
-    groups_text = ", ".join(groups)
-    frontmatter = "\n".join(
-        [
-            "---",
-            f"source_id: {stem}",
-            f"title: {json.dumps(title)}",
-            f"family: {stem}",
-            "document_type: uploaded",
-            'version: "1.0"',
-            f"created_at: {json.dumps(today)}",
-            f"updated_at: {json.dumps(today)}",
-            "owner: local_user",
-            f"allowed_groups: [{groups_text}]",
-            f"canonical_url: local://{stem}",
-            "---",
-            "",
-        ]
-    )
+    metadata = {
+        "source_id": stem,
+        "title": title,
+        "family": stem,
+        "document_type": "uploaded",
+        "version": "1.0",
+        "created_at": today,
+        "updated_at": today,
+        "owner": "local_user",
+        "allowed_groups": valid_groups,
+        "canonical_url": f"local://{stem}",
+    }
+    yaml_text = yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True).strip()
+    frontmatter = f"---\n{yaml_text}\n---\n\n"
 
     if not text.lstrip().startswith("#"):
         text = f"# {title}\n\n{text.strip()}\n"
@@ -318,7 +333,11 @@ def main() -> None:
             value=os.environ.get("RAGKIT_USER_GROUPS", "public,support"),
             help="Comma-separated groups used for access filtering.",
         )
-        groups = parse_groups(group_text)
+        try:
+            groups = parse_groups(group_text)
+        except ValueError as exc:
+            st.error(str(exc))
+            st.stop()
         st.caption("Active groups: " + ", ".join(groups))
 
         st.divider()
