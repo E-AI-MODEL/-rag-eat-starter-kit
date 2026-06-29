@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
 
-import web_app
 import yaml
+
+if importlib.util.find_spec("streamlit") is None:
+    raise unittest.SkipTest("streamlit is not installed; install the web extra to run web app tests")
+
+import web_app
 
 
 class WebAppHelperTests(unittest.TestCase):
