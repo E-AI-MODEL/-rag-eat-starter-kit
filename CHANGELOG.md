@@ -21,8 +21,6 @@ All notable changes to this project are documented here. The format is based on
 ### Changed
 - `Assistant` now accepts any object matching the `Retriever` protocol while
   keeping `HybridIndex` as the default local implementation.
-- `eval_runner` no longer assumes every retriever exposes `.chunks` for the
-  latest-family check.
 - Suppress Claude Code attribution in commits and pull requests
   (`.claude/settings.json`) so project history stays clean and readable.
 
