@@ -9,14 +9,14 @@ purpose:
 sources:
   - id: "example_docs"
     type: "documentation"
-    connector: "replace_with_connector_name"
+    connector: "local_markdown"
     include_patterns:
-      - "*.md"
-      - "*.pdf"
-      - "*.docx"
+      - "examples/corpus/*.md"
+      - "knowledge/*.md"
+      - "knowledge/*.markdown"
     exclude_patterns:
-      - "private/*"
-      - "archive/*"
+      - "knowledge/private/*"
+      - "knowledge/archive/*"
       - "*.tmp"
     access_control:
       enabled: true
