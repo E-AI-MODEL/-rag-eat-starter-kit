@@ -90,7 +90,10 @@ class ChromaRetriever:
 
     def index_corpus(self, corpus_dir: str) -> None:
         self.chunks = load_corpus(corpus_dir)
-        self.ids = [f"{chunk.source_id}#{index}" for index, chunk in enumerate(self.chunks)]
+        self.ids = [
+            f"{chunk.source_id}#{index}"
+            for index, chunk in enumerate(self.chunks)
+        ]
         existing = set(self.collection.get()["ids"]) if self.collection.count() else set()
         new_items = [
             (chunk_id, chunk)
@@ -100,7 +103,10 @@ class ChromaRetriever:
         if not new_items:
             return
 
-        documents = [f"{chunk.title}\n{chunk.section}\n{chunk.text}" for _id, chunk in new_items]
+        documents = [
+            f"{chunk.title}\n{chunk.section}\n{chunk.text}"
+            for _chunk_id, chunk in new_items
+        ]
         embeddings = [
             self.model.encode(f"passage: {text}", normalize_embeddings=True).tolist()
             for text in documents
@@ -131,7 +137,10 @@ class ChromaRetriever:
         if not visible or where is None:
             return []
 
-        query_embedding = self.model.encode(f"query: {query}", normalize_embeddings=True).tolist()
+        query_embedding = self.model.encode(
+            f"query: {query}",
+            normalize_embeddings=True,
+        ).tolist()
         result = self.collection.query(
             query_embeddings=[query_embedding],
             n_results=min(self.collection.count(), max(top_k * 5, 20)),
@@ -140,7 +149,9 @@ class ChromaRetriever:
         )
         id_to_index = {chunk_id: index for index, chunk_id in enumerate(self.ids)}
         hits: List[ScoredChunk] = []
-        for chunk_id, distance in zip(result.get("ids", [[]])[0], result["distances"][0]):
+        result_ids = result.get("ids", [[]])[0]
+        result_distances = result["distances"][0]
+        for chunk_id, distance in zip(result_ids, result_distances):
             index = id_to_index.get(chunk_id)
             if index is None or index not in visible:
                 continue
