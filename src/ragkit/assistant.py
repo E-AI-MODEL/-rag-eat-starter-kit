@@ -1,10 +1,9 @@
 """The assistant: EAT system prompt + retrieval, answering from context only.
 
 Vendor-neutral by design. If you pass an `llm` callable, it is called with the
-EAT-rendered system prompt, the user question and the retrieved context — plug in
-any provider you like. If you pass nothing, an offline extractive fallback runs so
-the whole loop is reproducible without credentials. Either way the safety contract
-holds: when nothing supports the question, the assistant abstains instead of guessing.
+EAT-rendered system prompt, the user question and the retrieved context. If you
+pass nothing, an offline extractive fallback runs so the whole loop is
+reproducible without credentials.
 """
 
 from __future__ import annotations
@@ -14,7 +13,8 @@ from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 from .eat_loader import EATProfile
-from .retrieval import HybridIndex, ScoredChunk
+from .retrieval import ScoredChunk
+from .retriever import Retriever
 
 # An LLM is any callable: (system_prompt, question, context_blocks) -> answer text.
 LLM = Callable[[str, str, List[str]], str]
@@ -46,7 +46,7 @@ class Assistant:
     def __init__(
         self,
         profile: EATProfile,
-        index: HybridIndex,
+        index: Retriever,
         user_groups: Sequence[str],
         top_k: int = 4,
         llm: Optional[LLM] = None,
@@ -62,7 +62,7 @@ class Assistant:
         hits = self.index.search(question, self.user_groups, top_k=self.top_k)
 
         if not hits:
-            # No supporting, accessible context -> abstain (the safety contract).
+            # No supporting, accessible context -> abstain.
             return AnswerResult(question, _FALLBACK, abstained=True, citations=[])
 
         if self.llm is not None:
