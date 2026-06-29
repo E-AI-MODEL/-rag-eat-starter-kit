@@ -185,6 +185,25 @@ def my_llm(system_prompt: str, question: str, context: list[str]) -> str:
 Retrieval and access filtering run before the callable is invoked, so the model
 only receives allowed context.
 
+## Forking
+
+Use a fork for project-specific retrievers, auth, deployment config or private
+prompts. Keep your fork synced with upstream before opening PRs back here:
+
+```bash
+git remote add upstream https://github.com/E-AI-MODEL/-rag-eat-starter-kit.git
+git fetch upstream
+git checkout main
+git pull upstream main
+git push origin main
+```
+
+For feature work, branch from the synced `main`:
+
+```bash
+git checkout -b my-change
+```
+
 ## What belongs upstream
 
 Good upstream PRs keep the small local path clean: bugfixes, tests, docs, safety
