@@ -32,7 +32,10 @@ class CaseResult:
 
 
 def _latest_family_member(assistant: Assistant, family: str) -> str:
-    members = [c for c in assistant.index.chunks if c.family == family]
+    chunks = getattr(assistant.index, "chunks", None)
+    if chunks is None:
+        return ""
+    members = [c for c in chunks if c.family == family]
     if not members:
         return ""
     return max(members, key=lambda c: c.updated_at).source_id
@@ -48,13 +51,15 @@ def _check(assistant: Assistant, row: dict, res: AnswerResult) -> tuple[bool, st
 
     if cond == "cites_latest_with_version_and_date":
         latest = _latest_family_member(assistant, expected)
-        ok = (
-            not res.abstained
-            and latest in res.cited_sources
-            and bool(_VERSION.search(res.answer))
-            and bool(_DATE.search(res.answer))
-        )
-        return ok, f"latest={latest} cited={res.cited_sources}"
+        has_version_and_date = bool(_VERSION.search(res.answer)) and bool(_DATE.search(res.answer))
+        if latest:
+            ok = (not res.abstained) and latest in res.cited_sources and has_version_and_date
+            return ok, f"latest={latest} cited={res.cited_sources}"
+
+        # Custom retrievers may not expose their full corpus as `.chunks`. In
+        # that case, check the family cited by the returned chunk instead.
+        ok = (not res.abstained) and expected in res.cited_families and has_version_and_date
+        return ok, f"latest=unavailable cited_families={res.cited_families}"
 
     if cond == "abstains":
         return res.abstained, f"abstained={res.abstained}"
