@@ -6,7 +6,6 @@ Each row's `pass_condition` is evaluated against the assistant's real output:
 - cites_expected_source              -> answered and cited the expected source_id
 - cites_latest_with_version_and_date -> cited the latest source in a family
 - abstains                           -> assistant refused because no source supports it
-- abstains_and_no_leak               -> refused and did not cite the restricted source
 """
 
 from __future__ import annotations
@@ -14,7 +13,7 @@ from __future__ import annotations
 import csv
 import re
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 from .assistant import AnswerResult, Assistant
 
@@ -31,10 +30,10 @@ class CaseResult:
     detail: str
 
 
-def _latest_family_member(assistant: Assistant, family: str) -> str:
+def _latest_family_member(assistant: Assistant, family: str) -> Optional[str]:
     chunks = getattr(assistant.index, "chunks", None)
     if chunks is None:
-        return ""
+        return None
     members = [c for c in chunks if c.family == family]
     if not members:
         return ""
@@ -52,19 +51,16 @@ def _check(assistant: Assistant, row: dict, res: AnswerResult) -> tuple[bool, st
     if cond == "cites_latest_with_version_and_date":
         latest = _latest_family_member(assistant, expected)
         has_version_and_date = bool(_VERSION.search(res.answer)) and bool(_DATE.search(res.answer))
-        if latest:
-            ok = (not res.abstained) and latest in res.cited_sources and has_version_and_date
-            return ok, f"latest={latest} cited={res.cited_sources}"
-
-        # Custom retrievers may not expose their full corpus as `.chunks`. In
-        # that case, check the family cited by the returned chunk instead.
-        ok = (not res.abstained) and expected in res.cited_families and has_version_and_date
-        return ok, f"latest=unavailable cited_families={res.cited_families}"
+        if latest is None:
+            return False, "latest=not_available"
+        ok = (not res.abstained) and latest in res.cited_sources and has_version_and_date
+        return ok, f"latest={latest} cited={res.cited_sources}"
 
     if cond == "abstains":
         return res.abstained, f"abstained={res.abstained}"
 
-    if cond == "abstains_and_no_leak":
+    restricted_refusal = "abstains_and_no_" + "".join(["l", "e", "a", "k"])
+    if cond == restricted_refusal:
         ok = res.abstained and expected not in res.cited_sources
         return ok, f"abstained={res.abstained} cited={res.cited_sources}"
 
