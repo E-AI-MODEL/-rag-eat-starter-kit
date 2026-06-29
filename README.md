@@ -4,42 +4,27 @@
 [![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## What is this?
+A small, local RAG assistant that answers from your documents, cites sources,
+uses access groups, and abstains when the retrieved sources do not support the
+question.
 
-This is a **working example of a question-answering assistant that only answers from
-documents you give it** and says *"I don't know"* instead of guessing. Picture a
-help-desk bot that quotes your own manuals and policies, never invents an answer, and
-never shows a reader a document they aren't allowed to see.
-
-It runs on your own machine with **one command**. No account, no external service, no
-internet needed, so you can read every line and watch exactly how it behaves.
-
-**Who is it for?** Anyone who wants to understand or build a trustworthy document
-assistant: developers, students, and teams evaluating this kind of system. No prior
-background is assumed.
-
-Two terms you'll meet here, in plain language:
-
-- **RAG** (Retrieval-Augmented Generation): the assistant first *retrieves* the
-  relevant passages from your documents, then answers *using only those passages*. That
-  is what keeps answers tied to real sources instead of made up.
-- **EAT**: a small, human-readable file that spells out the assistant's role, steps,
-  rules and limits. Instead of hiding the behavior inside a long prompt, it lives in
-  one file you can review like code. See
-  [docs/EAT_Construct_Explanation.md](docs/EAT_Construct_Explanation.md) and the
-  [EAT project](https://github.com/E-AI-MODEL/EAT).
-
-Under the hood, one command validates that behavior profile, runs the
-retrieve-then-answer loop over a small demo set of documents, enforces access control
-(a reader only sees sources their group is allowed to see), and scores itself against a
-fixed set of test questions. All locally and offline.
+## Quick start
 
 ```bash
 pip install -r requirements.txt
 python3 run.py
 ```
 
-```
+Expected result: the EAT profile validates and the demo eval reports **6/6 cases passed**.
+
+<details open>
+<summary><strong>Start here: what the one-command demo does</strong></summary>
+
+`python3 run.py` validates the EAT profile, runs the local retrieve-then-answer
+loop over `examples/corpus/`, and scores the assistant against
+`eval/rag_eval_set.csv`.
+
+```text
 EAT profile OK: prompts/rag_assistant.eat
   identity : rag_assistant, source_grounded, retrieval_first
   workflow : 7 steps
@@ -54,39 +39,30 @@ RAG evaluation
 [PASS] #4 access_control: What is the internal pricing markup?
 [PASS] #5 no_answer: What is the CEO home address?
 [PASS] #6 citation_quality: Which section covers warranty coverage?
+------------------------------------------------------------
+6/6 cases passed
 ```
 
-New here? Follow the **[guided walkthrough](docs/GETTING_STARTED.md)** (about ten minutes).
+</details>
+
+## Open what you need
 
 <details>
-<summary><strong>I cloned it. Now what?</strong></summary>
+<summary><strong>New user: clone, run, ask</strong></summary>
 
-Use this path if you are new to terminal-based projects or just want to see the kit run.
-
-### 1. Open a terminal
-
-- macOS or Linux: open **Terminal**.
-- Windows with WSL or Git Bash: use the Bash commands below.
-- Windows PowerShell: use the PowerShell commands below.
-
-### 2. Clone the repository
-
-For macOS, Linux, WSL, Git Bash and PowerShell:
+Clone with a normal local folder name:
 
 ```bash
 git clone https://github.com/E-AI-MODEL/-rag-eat-starter-kit.git rag-eat-starter-kit
 cd rag-eat-starter-kit
 ```
 
-The extra `rag-eat-starter-kit` at the end gives the local folder a normal name.
-
-### 3. Run the basic check
-
 macOS, Linux, WSL or Git Bash:
 
 ```bash
 pip install -r requirements.txt
 python3 run.py
+python3 run.py ask "What are the cancellation conditions?"
 ```
 
 Windows PowerShell:
@@ -94,11 +70,15 @@ Windows PowerShell:
 ```powershell
 py -3 -m pip install -r requirements.txt
 py -3 run.py
+py -3 run.py ask "What are the cancellation conditions?"
 ```
 
-If this passes, the terminal demo is working.
+For a slower walkthrough, read [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md).
 
-### 4. Start the web app
+</details>
+
+<details>
+<summary><strong>Use the local web app</strong></summary>
 
 macOS, Linux, WSL or Git Bash:
 
@@ -112,91 +92,42 @@ Windows PowerShell:
 .\start.ps1
 ```
 
-If PowerShell blocks local scripts on your machine, run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\start.ps1
-```
-
-This creates a local Python environment, installs the web dependency, validates the EAT
-profile again, and starts the local web app.
-
-### 5. Open the app
-
-Streamlit normally opens your browser automatically. If it does not, open:
+Open:
 
 ```text
 http://localhost:8501
 ```
 
-This is a local website running on your own machine. It is not GitHub Pages and it is
-not public on the internet.
-
-### 6. Try the included demo
-
-In the sidebar, set **Corpus** to `demo` and click one of the example questions, or ask:
-
-```text
-What are the cancellation conditions?
-```
-
-### 7. Try your own documents
-
-In the sidebar, set **Corpus** to `knowledge`, upload a `.txt`, `.md` or `.markdown`
-file, then ask a question about it.
-
-Uploads are saved in your own local clone, fork, or Codespace. They are not sent to the
-original repository automatically.
-
-### Already cloned and ran the basic check?
-
-Then skip straight to the right startup command for your shell:
-
-```bash
-bash start.sh
-```
-
-or, in Windows PowerShell:
-
-```powershell
-.\start.ps1
-```
-
-Use the web app instead of typing every `python3 run.py ask "..."` command by hand.
-
-### Want the terminal-only path?
-
-macOS, Linux, WSL or Git Bash:
-
-```bash
-python3 run.py validate
-python3 run.py prompt
-python3 run.py ask "What are the cancellation conditions?"
-python3 run.py eval
-```
-
-Windows PowerShell:
-
-```powershell
-py -3 run.py validate
-py -3 run.py prompt
-py -3 run.py ask "What are the cancellation conditions?"
-py -3 run.py eval
-```
-
-For a slower walkthrough, read [docs/GETTING_STARTED.md](docs/GETTING_STARTED.md).
+Uploads go into your local `knowledge/` folder. That folder is ignored by Git.
 
 </details>
 
-## Why this kit is different
+<details>
+<summary><strong>Understand RAG and EAT</strong></summary>
 
-Most RAG starters give you retrieval code. This one adds a **validated behavior
-contract**: the assistant's role, workflow, rules and boundaries live in a single EAT
-file that is parsed and checked, not buried in a prompt string. The behavior is
-reviewable in a pull request and cannot silently drift. If the profile is malformed,
-the run fails.
+**RAG** means Retrieval-Augmented Generation. The assistant retrieves relevant
+passages first, then answers from those passages.
 
-## What it does
+**EAT** is a small behavior file. It records the assistant's role, workflow,
+rules and limits in a file that can be reviewed like code.
+
+Useful files:
+
+- [`prompts/rag_assistant.eat`](prompts/rag_assistant.eat)
+- [`docs/EAT_Construct_Explanation.md`](docs/EAT_Construct_Explanation.md)
+- [`docs/RAG_References.md`](docs/RAG_References.md)
+
+What this kit adds on top of a basic RAG starter:
+
+- behavior is validated before the assistant runs;
+- source groups are checked before answering;
+- unsupported questions return an abstention;
+- the eval set runs as a real check.
+
+</details>
+
+<details>
+<summary><strong>Architecture</strong></summary>
 
 ```mermaid
 flowchart TD
@@ -205,101 +136,62 @@ flowchart TD
     prompt["Render system prompt"]
 
     corpus["examples/corpus/*.md<br/>Markdown + front matter"]
-    chunks["Load corpus<br/>parse metadata + split sections"]
-    access["Access filter<br/>fail closed on allowed_groups"]
+    chunks["Load corpus<br/>metadata + sections"]
+    access["Access filter<br/>allowed_groups"]
     retrieve["Hybrid retrieve<br/>BM25 + TF-IDF"]
-    rank["Merge scores + threshold<br/>prefer latest version per family"]
+    rank["Rank + prefer latest family member"]
 
     assistant["Assistant<br/>src/ragkit/assistant.py"]
-    decision{"Supporting context?"}
-    answer["Grounded answer<br/>citations + optional LLM"]
-    abstain["Honest abstention<br/>no unsupported answer"]
-
+    answer["Grounded answer<br/>citations"]
+    abstain["Abstention"]
     eval["eval/rag_eval_set.csv"]
-    runner["Eval runner<br/>src/ragkit/eval_runner.py"]
     report["Pass/fail report"]
 
     eat --> validate --> prompt --> assistant
     corpus --> chunks --> access --> retrieve --> rank --> assistant
-    eval --> runner --> assistant
-    assistant --> decision
-    decision -- yes --> answer --> report
-    decision -- no --> abstain --> report
-    runner --> report
+    assistant --> answer --> report
+    assistant --> abstain --> report
+    eval --> assistant
 ```
 
-- **EAT-driven behavior**: `src/ragkit/eat_loader.py` validates the profile and renders
-  the system prompt.
-- **Corpus loading**: `src/ragkit/retrieval.py` parses Markdown front matter, keeps
-  metadata such as `allowed_groups`, and splits documents into sections.
-- **Hybrid retrieval**: combines BM25 keyword matching with TF-IDF cosine matching, then
-  merges, thresholds and reranks results (`src/ragkit/retrieval.py`). Pure standard library.
-- **Fail-closed access control**: a document whose `allowed_groups` do not overlap the
-  user is filtered before scoring.
-- **Grounded answering**: answers come only from retrieved context; when nothing
-  supports the question the assistant abstains (`src/ragkit/assistant.py`).
-- **Real evaluation**: `eval/rag_eval_set.csv` is executed against the assistant and
-  scored (`src/ragkit/eval_runner.py`).
+Main pieces:
 
-## Commands
+- `src/ragkit/eat_loader.py`: validates the EAT profile and renders the prompt.
+- `src/ragkit/retrieval.py`: loads Markdown, parses metadata and retrieves chunks.
+- `src/ragkit/retriever.py`: defines the extension protocol.
+- `src/ragkit/assistant.py`: connects retrieval, prompt and answer generation.
+- `src/ragkit/eval_runner.py`: runs the evaluation CSV.
+
+</details>
+
+<details>
+<summary><strong>Command reference</strong></summary>
 
 | Command | What it does |
 |---|---|
 | `python3 run.py` | validate the EAT profile, then run the eval set |
 | `python3 run.py validate` | validate the EAT profile only |
-| `python3 run.py prompt` | print the system prompt rendered from the profile |
-| `python3 run.py ask "..."` | ask the demo assistant a single question |
-| `python3 run.py eval` | run the evaluation set and report pass/fail |
-| `bash start.sh` | start the local web app on macOS, Linux, WSL or Git Bash |
-| `.\start.ps1` | start the local web app on Windows PowerShell |
-| `python3 -m unittest discover -s tests -p "test_*.py"` | run the core unit tests; web tests are skipped unless the `web` extra is installed |
+| `python3 run.py prompt` | print the rendered system prompt |
+| `python3 run.py ask "..."` | ask one question |
+| `python3 run.py eval` | run the evaluation set |
+| `bash start.sh` | start the web app on macOS, Linux, WSL or Git Bash |
+| `.\start.ps1` | start the web app on Windows PowerShell |
+| `python3 -m unittest discover -s tests -p "test_*.py"` | run unit tests |
 
-`make help` lists the same as `make` targets. The package is also pip-installable
-(`pip install -e .`), which exposes the same commands as a `rag-eat` console script.
+The web app tests skip unless the `web` extra is installed:
 
-> **Scope, honestly:** retrieval here is in-memory BM25 + TF-IDF over a small corpus.
-> It is built to be readable and to prove the behavior, not to be a production index.
-> See [Scaling up](#scaling-up) below for the upgrade path when you outgrow it.
-
-## Scaling up
-
-The kit is designed as a starting point. Two paths:
-
-**Use it as-is** (most users): clone, `pip install -r requirements.txt`, run. No
-account, no cloud, no fork needed. The demo and the web app are enough for
-learning, internal tools, and small corpora.
-
-**Extend or fork** (when you need more): the kit has three formal extension
-points so you can swap pieces without rewriting the whole thing.
-
-| When you want... | Use this extension point | See |
-|---|---|---|
-| A real LLM (Anthropic, OpenAI, Ollama, ...) | `Assistant(llm=callable)` | [`examples/llm_anthropic_adapter.py`](examples/llm_anthropic_adapter.py) |
-| Multilingual retrieval, >1000 docs, a vector store | `Retriever` protocol | [`examples/recipes/chroma_multilingual.py`](examples/recipes/chroma_multilingual.py) |
-| Multi-user, per-user corpora, hosted DB | `Retriever` protocol | [`examples/recipes/supabase_multiuser.py`](examples/recipes/supabase_multiuser.py) |
-| Different assistant behavior | EAT profile | [`prompts/rag_assistant.eat`](prompts/rag_assistant.eat) |
-
-The full guide with install commands, schema, code samples, and safety notes lives in
-[`EXTENDING.md`](EXTENDING.md). If your change adds runtime dependencies, auth, or
-production infrastructure, prefer a fork and PR only the reusable parts back upstream.
-
-The `Retriever` protocol is intentionally minimal:
-
-```python
-class Retriever(Protocol):
-    def search(self, query: str, user_groups: Sequence[str], top_k: int = 5
-              ) -> List[ScoredChunk]: ...
+```bash
+pip install -e ".[web]"
+python3 -m unittest discover -s tests -p "test_*.py"
 ```
 
-`HybridIndex` already satisfies it. Any object with a matching `search` method
-works as a drop-in replacement. The one hard rule: access filtering based on
-`user_groups` must happen before results are returned, so the kit's fail-closed
-safety property holds regardless of backend.
+</details>
 
-## Plug in a real model
+<details>
+<summary><strong>Plug in a real model</strong></summary>
 
-The demo answers extractively so it runs offline. To use any LLM, pass a callable.
-The EAT system prompt and retrieved context are handed to you, provider-agnostic:
+The default answer step is extractive so the demo runs offline. To use an LLM,
+pass a callable:
 
 ```python
 from typing import List
@@ -307,9 +199,10 @@ from typing import List
 from ragkit import HybridIndex, load_corpus, load_eat
 from ragkit.assistant import Assistant
 
+
 def my_llm(system_prompt: str, question: str, context: List[str]) -> str:
-    # call your provider of choice with system_prompt + question + context
     ...
+
 
 assistant = Assistant(
     load_eat("prompts/rag_assistant.eat"),
@@ -320,7 +213,7 @@ assistant = Assistant(
 print(assistant.answer("What are the cancellation conditions?").answer)
 ```
 
-A complete, runnable version of this wiring lives in
+A runnable Anthropic example lives in
 [`examples/llm_anthropic_adapter.py`](examples/llm_anthropic_adapter.py):
 
 ```bash
@@ -329,59 +222,112 @@ export ANTHROPIC_API_KEY="your-api-key-here"
 python3 examples/llm_anthropic_adapter.py "What are the cancellation conditions?"
 ```
 
-Any provider works. Write the same `(system_prompt, question, context)` callable.
-Retrieval and access filtering still run first, so the model only ever sees sources the
-user is allowed to see.
+</details>
 
-## Use your own documents
+<details>
+<summary><strong>Scale up with a custom retriever</strong></summary>
 
-For the beginner web app, upload `.txt`, `.md` or `.markdown` files into `knowledge/`.
-Those local uploads are ignored by Git by default.
+The bundled `HybridIndex` is an in-memory BM25 plus TF-IDF retriever for a small
+corpus. It is built to be readable and easy to replace.
 
-For the terminal-only demo, add Markdown files to `examples/corpus/` with the
-front-matter shown in [`examples/corpus/README.md`](examples/corpus/README.md), set
-`allowed_groups` honestly, and the assistant will index and respect them.
+| Need | Extension point | See |
+|---|---|---|
+| Real LLM provider | `Assistant(llm=callable)` | [`examples/llm_anthropic_adapter.py`](examples/llm_anthropic_adapter.py) |
+| Multilingual vector retrieval | `Retriever` protocol | [`examples/recipes/chroma_multilingual.py`](examples/recipes/chroma_multilingual.py) |
+| Per-user hosted retrieval | `Retriever` protocol | [`examples/recipes/supabase_multiuser.py`](examples/recipes/supabase_multiuser.py) |
+| Different assistant behavior | EAT profile | [`prompts/rag_assistant.eat`](prompts/rag_assistant.eat) |
 
-## Repository structure
+The retriever protocol is small:
+
+```python
+class Retriever(Protocol):
+    def search(
+        self,
+        query: str,
+        user_groups: Sequence[str],
+        top_k: int = 5,
+    ) -> List[ScoredChunk]: ...
+```
+
+Read [`EXTENDING.md`](EXTENDING.md) for install commands, schema notes and recipe guidance.
+
+</details>
+
+<details>
+<summary><strong>Use your own documents</strong></summary>
+
+For the web app, upload `.txt`, `.md` or `.markdown` files into `knowledge/`.
+
+For the terminal demo, add Markdown files to `examples/corpus/` with front matter
+like the examples in [`examples/corpus/README.md`](examples/corpus/README.md).
+Set `allowed_groups` honestly so the assistant can filter sources by group.
+
+Minimal front matter:
+
+```yaml
+---
+source_id: my_policy
+title: My Policy
+allowed_groups: [public]
+---
+```
+
+Then ask:
+
+```bash
+python3 run.py ask "What does my policy say?"
+```
+
+</details>
+
+<details>
+<summary><strong>Repository map</strong></summary>
 
 ### Runnable core
+
 - `run.py`: one entry point for every command.
-- `web_app.py`: optional local Streamlit interface for beginners.
-- `start.sh`: starts the local web interface on macOS, Linux, WSL or Git Bash.
-- `start.ps1`: starts the local web interface on Windows PowerShell.
-- `src/ragkit/`: the package: `eat_loader`, `retrieval`, `retriever`, `assistant`, `eval_runner`.
-- `knowledge/`: local document folder used by the beginner web app.
-- `examples/corpus/`: synthetic demo knowledge base with access metadata.
+- `web_app.py`: optional local Streamlit interface.
+- `start.sh`: web app launcher for macOS, Linux, WSL and Git Bash.
+- `start.ps1`: web app launcher for Windows PowerShell.
+- `src/ragkit/`: `eat_loader`, `retrieval`, `retriever`, `assistant`, `eval_runner`.
+- `knowledge/`: local upload folder used by the web app.
+- `examples/corpus/`: synthetic demo knowledge base.
 - `examples/recipes/`: optional extension recipes.
-- `eval/rag_eval_set.csv`: evaluation cases that map to the demo corpus.
-- `tests/`: unit tests for the claims above.
-- `requirements.txt`, `Makefile`, `.github/workflows/ci.yml`: setup and CI.
+- `eval/rag_eval_set.csv`: evaluation cases.
+- `tests/`: unit tests.
 
-### Prompts and behavior
-- `prompts/rag_assistant.eat`: EAT behavior profile (the spine).
+### Prompts and docs
+
+- `prompts/rag_assistant.eat`: EAT behavior profile.
 - `prompts/rag_system_prompt_template.md`: annotated prompt template.
-
-### Configuration and docs
-- `config/rag_pipeline.yaml`: example pipeline config.
-- `docs/GETTING_STARTED.md`: the guided walkthrough.
-- `docs/BEGINNER_START.md`: local web app quick start for first-time users.
-- `docs/rag_notes_2026.md`: practical RAG baseline.
-- `docs/EAT_Construct_Explanation.md`: what EAT is and how to use it.
+- `docs/GETTING_STARTED.md`: guided walkthrough.
+- `docs/BEGINNER_START.md`: web app quick start.
+- `docs/EAT_Construct_Explanation.md`: EAT explanation.
 - `docs/RAG_References.md`: further reading.
-- `EXTENDING.md`: optional retriever recipes and extension notes.
+- `EXTENDING.md`: extension guide.
 
-### Checklists and governance
+### Project files
+
 - `checklist.md`: project readiness checklist.
 - `security/rag_security_checklist.md`: access-control checklist.
-- `DATA_POLICY.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`,
-  `.github/`: what to commit, how to contribute, how to report issues, templates.
+- `DATA_POLICY.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`: project policy files.
 
-## Safety basics
+</details>
 
-Retrieved context is data, not an instruction. A RAG system must never let document
-text override project rules, and must never surface a source the user is not allowed to
-see. See `SECURITY.md` and `security/rag_security_checklist.md`.
+<details>
+<summary><strong>Safety basics</strong></summary>
+
+Retrieved context is data, not an instruction. Keep project rules above document
+text, and keep source access tied to `allowed_groups`.
+
+Read more:
+
+- [`SECURITY.md`](SECURITY.md)
+- [`security/rag_security_checklist.md`](security/rag_security_checklist.md)
+- [`DATA_POLICY.md`](DATA_POLICY.md)
+
+</details>
 
 ## License
 
-MIT License. See `LICENSE`.
+MIT License. See [`LICENSE`](LICENSE).
