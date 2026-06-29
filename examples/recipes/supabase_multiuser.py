@@ -3,7 +3,7 @@
 Install with:
     pip install -e ".[supabase]"
 
-The read path expects a user-scoped JWT. Keep the service-role key for backend
+The read path expects a user-scoped JWT. Keep privileged project keys for backend
 write jobs only.
 """
 
@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 from ragkit.retrieval import Chunk, ScoredChunk, tokenize
 
 _EMBED_MODEL = "intfloat/multilingual-e5-base"
+_OPAQUE_PRIVILEGED_PREFIXES = ("sb_secret_",)
 
 
 def _require_extras() -> None:
@@ -27,27 +28,40 @@ def _require_extras() -> None:
         raise RuntimeError('Install this recipe with: pip install -e ".[supabase]"') from exc
 
 
-def _jwt_role(token: str) -> Optional[str]:
+def _jwt_payload(token: str) -> Optional[Dict[str, Any]]:
     parts = token.split(".")
     if len(parts) < 2:
         return None
     payload = parts[1] + "=" * (-len(parts[1]) % 4)
     try:
-        data = json.loads(base64.urlsafe_b64decode(payload.encode("ascii")))
+        return json.loads(base64.urlsafe_b64decode(payload.encode("ascii")))
     except (ValueError, UnicodeDecodeError):
         return None
-    role = data.get("role")
+
+
+def _jwt_role(token: str) -> Optional[str]:
+    payload = _jwt_payload(token)
+    if not payload:
+        return None
+    role = payload.get("role")
     return str(role) if role else None
 
 
-def _reject_service_role_key(key: str) -> None:
-    if _jwt_role(key) == "service_role":
-        raise ValueError("Use a user-scoped JWT for SupabaseRetriever, not service-role.")
+def _require_user_jwt(key: str) -> None:
+    if key.startswith(_OPAQUE_PRIVILEGED_PREFIXES):
+        raise ValueError("SupabaseRetriever reads require a user JWT, not an opaque project key.")
+    payload = _jwt_payload(key)
+    if payload is None or not payload.get("sub"):
+        raise ValueError("SupabaseRetriever reads require a user-scoped JWT.")
+    if payload.get("role") == "service_role":
+        raise ValueError("SupabaseRetriever reads require a user JWT, not a privileged JWT.")
 
 
-def _require_service_role_key(key: str) -> None:
+def _require_backend_write_key(key: str) -> None:
+    if key.startswith(_OPAQUE_PRIVILEGED_PREFIXES):
+        return
     if _jwt_role(key) != "service_role":
-        raise ValueError("insert_document must run with the service-role key in a backend.")
+        raise ValueError("insert_document must run with a backend write key.")
 
 
 class SupabaseRetriever:
@@ -64,7 +78,7 @@ class SupabaseRetriever:
 
         if not url or not key or not user_id:
             raise ValueError("url, key and user_id are required.")
-        _reject_service_role_key(key)
+        _require_user_jwt(key)
 
         self.user_id = user_id
         self.client = create_client(url, key)
@@ -132,7 +146,7 @@ def insert_document(
     model_name: str = _EMBED_MODEL,
 ) -> None:
     _require_extras()
-    _require_service_role_key(service_key)
+    _require_backend_write_key(service_key)
     from sentence_transformers import SentenceTransformer
     from supabase import create_client
 
