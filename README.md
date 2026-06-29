@@ -52,7 +52,8 @@ RAG evaluation
 [PASS] #2 exact_term: What does product code X-123 mean?
 [PASS] #3 version: Which product guide version applies now?
 [PASS] #4 access_control: What is the internal pricing markup?
-[PASS] #5 citation_quality: Which section covers warranty coverage?
+[PASS] #5 no_answer: What is the CEO home address?
+[PASS] #6 citation_quality: Which section covers warranty coverage?
 ```
 
 New here? Follow the **[guided walkthrough](docs/GETTING_STARTED.md)** (about ten minutes).
@@ -251,14 +252,49 @@ flowchart TD
 | `python3 run.py eval` | run the evaluation set and report pass/fail |
 | `bash start.sh` | start the local web app on macOS, Linux, WSL or Git Bash |
 | `.\start.ps1` | start the local web app on Windows PowerShell |
-| `python3 -m unittest discover -s tests -p "test_*.py"` | run the unit tests |
+| `python3 -m unittest discover -s tests -p "test_*.py"` | run the core unit tests; web tests are skipped unless the `web` extra is installed |
 
 `make help` lists the same as `make` targets. The package is also pip-installable
 (`pip install -e .`), which exposes the same commands as a `rag-eat` console script.
 
 > **Scope, honestly:** retrieval here is in-memory BM25 + TF-IDF over a small corpus.
 > It is built to be readable and to prove the behavior, not to be a production index.
-> Swap in your own vector store and a real model when you outgrow it.
+> See [Scaling up](#scaling-up) below for the upgrade path when you outgrow it.
+
+## Scaling up
+
+The kit is designed as a starting point. Two paths:
+
+**Use it as-is** (most users): clone, `pip install -r requirements.txt`, run. No
+account, no cloud, no fork needed. The demo and the web app are enough for
+learning, internal tools, and small corpora.
+
+**Extend or fork** (when you need more): the kit has three formal extension
+points so you can swap pieces without rewriting the whole thing.
+
+| When you want... | Use this extension point | See |
+|---|---|---|
+| A real LLM (Anthropic, OpenAI, Ollama, ...) | `Assistant(llm=callable)` | [`examples/llm_anthropic_adapter.py`](examples/llm_anthropic_adapter.py) |
+| Multilingual retrieval, >1000 docs, a vector store | `Retriever` protocol | [`examples/recipes/chroma_multilingual.py`](examples/recipes/chroma_multilingual.py) |
+| Multi-user, per-user corpora, hosted DB | `Retriever` protocol | [`examples/recipes/supabase_multiuser.py`](examples/recipes/supabase_multiuser.py) |
+| Different assistant behavior | EAT profile | [`prompts/rag_assistant.eat`](prompts/rag_assistant.eat) |
+
+The full guide with install commands, schema, code samples, and safety notes lives in
+[`EXTENDING.md`](EXTENDING.md). If your change adds runtime dependencies, auth, or
+production infrastructure, prefer a fork and PR only the reusable parts back upstream.
+
+The `Retriever` protocol is intentionally minimal:
+
+```python
+class Retriever(Protocol):
+    def search(self, query: str, user_groups: Sequence[str], top_k: int = 5
+              ) -> List[ScoredChunk]: ...
+```
+
+`HybridIndex` already satisfies it. Any object with a matching `search` method
+works as a drop-in replacement. The one hard rule: access filtering based on
+`user_groups` must happen before results are returned, so the kit's fail-closed
+safety property holds regardless of backend.
 
 ## Plug in a real model
 
@@ -313,9 +349,10 @@ front-matter shown in [`examples/corpus/README.md`](examples/corpus/README.md), 
 - `web_app.py`: optional local Streamlit interface for beginners.
 - `start.sh`: starts the local web interface on macOS, Linux, WSL or Git Bash.
 - `start.ps1`: starts the local web interface on Windows PowerShell.
-- `src/ragkit/`: the package: `eat_loader`, `retrieval`, `assistant`, `eval_runner`.
+- `src/ragkit/`: the package: `eat_loader`, `retrieval`, `retriever`, `assistant`, `eval_runner`.
 - `knowledge/`: local document folder used by the beginner web app.
 - `examples/corpus/`: synthetic demo knowledge base with access metadata.
+- `examples/recipes/`: optional extension recipes.
 - `eval/rag_eval_set.csv`: evaluation cases that map to the demo corpus.
 - `tests/`: unit tests for the claims above.
 - `requirements.txt`, `Makefile`, `.github/workflows/ci.yml`: setup and CI.
@@ -331,6 +368,7 @@ front-matter shown in [`examples/corpus/README.md`](examples/corpus/README.md), 
 - `docs/rag_notes_2026.md`: practical RAG baseline.
 - `docs/EAT_Construct_Explanation.md`: what EAT is and how to use it.
 - `docs/RAG_References.md`: further reading.
+- `EXTENDING.md`: optional retriever recipes and extension notes.
 
 ### Checklists and governance
 - `checklist.md`: project readiness checklist.

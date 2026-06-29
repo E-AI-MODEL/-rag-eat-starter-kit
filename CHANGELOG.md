@@ -5,9 +5,35 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+- `Retriever` protocol (`src/ragkit/retriever.py`) as a small extension point for
+  swapping the default in-memory retriever with another backend.
+- Optional `chroma` and `supabase` extras for recipe-only dependencies.
+- `examples/recipes/chroma_multilingual.py`, a local ChromaDB vector retriever
+  with metadata-based access filtering and unique chunk IDs.
+- `examples/recipes/supabase_multiuser.py`, a Supabase pgvector retriever that
+  uses a user-scoped read token, passes `user_id` and groups into the RPC, and
+  rejects service-role keys on the read path.
+- `examples/recipes/README.md` and `EXTENDING.md` with setup notes for optional
+  retriever recipes.
+- Tests for custom retrievers and protocol compatibility.
+
 ### Changed
+- `Assistant` now accepts any object matching the `Retriever` protocol while
+  keeping `HybridIndex` as the default local implementation.
 - Suppress Claude Code attribution in commits and pull requests
   (`.claude/settings.json`) so project history stays clean and readable.
+
+### Fixed
+- Web app helper tests now skip cleanly when the optional `web` extra is not
+  installed, so the default `requirements.txt` test path does not fail because
+  Streamlit is absent.
+- Chroma recipe access filtering now happens through Chroma metadata filters and
+  is checked again before returning chunks.
+- Chroma recipe maps results by unique chunk ID instead of `source_id`, avoiding
+  wrong citations for multi-section documents.
+- Supabase recipe documentation and RPC payload no longer use a hardcoded
+  `public` group.
 
 ### Removed
 - Stale, unreferenced example stubs (`examples/example_question.md`,
