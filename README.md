@@ -172,7 +172,7 @@ Main pieces:
 | `python3 run.py` | validate the EAT profile, then run the eval set |
 | `python3 run.py validate` | validate the EAT profile only |
 | `python3 run.py prompt` | print the rendered system prompt |
-| `python3 run.py ask "..."` | ask one question |
+| `python3 run.py ask "What are the cancellation conditions?"` | ask one question |
 | `python3 run.py eval` | run the evaluation set |
 | `bash start.sh` | start the web app on macOS, Linux, WSL or Git Bash |
 | `.\start.ps1` | start the web app on Windows PowerShell |
@@ -201,7 +201,9 @@ from ragkit.assistant import Assistant
 
 
 def my_llm(system_prompt: str, question: str, context: List[str]) -> str:
-    ...
+    if not context:
+        return "I don't know."
+    return context[0]
 
 
 assistant = Assistant(
@@ -218,7 +220,7 @@ A runnable Anthropic example lives in
 
 ```bash
 pip install ".[anthropic]"
-export ANTHROPIC_API_KEY="your-api-key-here"
+test -n "$ANTHROPIC_API_KEY"
 python3 examples/llm_anthropic_adapter.py "What are the cancellation conditions?"
 ```
 
@@ -246,7 +248,8 @@ class Retriever(Protocol):
         query: str,
         user_groups: Sequence[str],
         top_k: int = 5,
-    ) -> List[ScoredChunk]: ...
+    ) -> List[ScoredChunk]:
+        raise NotImplementedError
 ```
 
 Read [`EXTENDING.md`](EXTENDING.md) for install commands, schema notes and recipe guidance.
