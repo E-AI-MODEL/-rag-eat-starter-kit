@@ -17,7 +17,8 @@ core dependencies.
 
 ```python
 class Retriever(Protocol):
-    def search(self, query: str, user_groups: Sequence[str], top_k: int = 5) -> List[ScoredChunk]: ...
+    def search(self, query: str, user_groups: Sequence[str], top_k: int = 5) -> List[ScoredChunk]:
+        raise NotImplementedError
 ```
 
 Any object with that `search` method can be passed to `Assistant`. `HybridIndex`
@@ -161,7 +162,7 @@ from examples.recipes.supabase_multiuser import SupabaseRetriever
 retriever = SupabaseRetriever(
     url=os.environ["SUPABASE_URL"],
     key=os.environ["SUPABASE_USER_JWT"],
-    user_id=current_user_id,
+    user_id=os.environ["SUPABASE_USER_ID"],
 )
 assistant = Assistant(
     load_eat("prompts/rag_assistant.eat"),
@@ -179,7 +180,9 @@ The answer step can use any model provider by passing `llm=` to `Assistant`:
 
 ```python
 def my_llm(system_prompt: str, question: str, context: list[str]) -> str:
-    ...
+    if not context:
+        return "I don't know."
+    return context[0]
 ```
 
 Retrieval and access filtering run before the callable is invoked, so the model
