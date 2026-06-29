@@ -31,6 +31,22 @@ def _group_key(group: str) -> str:
     return f"access_{clean[:40]}_{digest}"
 
 
+def _chunk_id(chunk: Chunk) -> str:
+    identity = "\n".join(
+        [
+            chunk.source_id,
+            chunk.title,
+            chunk.section,
+            chunk.version,
+            chunk.updated_at,
+            ",".join(sorted(chunk.allowed_groups)),
+            chunk.text,
+        ]
+    )
+    digest = hashlib.sha1(identity.encode("utf-8")).hexdigest()[:16]
+    return f"{chunk.source_id}#{digest}"
+
+
 def _where_for_groups(groups: Sequence[str]) -> Optional[dict]:
     clauses = [{_group_key(group): True} for group in groups if group.strip()]
     if not clauses:
@@ -90,32 +106,30 @@ class ChromaRetriever:
 
     def index_corpus(self, corpus_dir: str) -> None:
         self.chunks = load_corpus(corpus_dir)
-        self.ids = [
-            f"{chunk.source_id}#{index}"
-            for index, chunk in enumerate(self.chunks)
-        ]
-        existing = set(self.collection.get()["ids"]) if self.collection.count() else set()
-        new_items = [
-            (chunk_id, chunk)
-            for chunk_id, chunk in zip(self.ids, self.chunks)
-            if chunk_id not in existing
-        ]
-        if not new_items:
-            return
+        self.ids = [_chunk_id(chunk) for chunk in self.chunks]
+        wanted = set(self.ids)
+        source_ids = {chunk.source_id for chunk in self.chunks}
 
-        documents = [
-            f"{chunk.title}\n{chunk.section}\n{chunk.text}"
-            for _chunk_id, chunk in new_items
-        ]
+        if self.collection.count():
+            existing = self.collection.get(include=["metadatas"])
+            stale_ids = [
+                chunk_id
+                for chunk_id, meta in zip(existing["ids"], existing["metadatas"])
+                if meta.get("source_id") in source_ids and chunk_id not in wanted
+            ]
+            if stale_ids:
+                self.collection.delete(ids=stale_ids)
+
+        documents = [f"{chunk.title}\n{chunk.section}\n{chunk.text}" for chunk in self.chunks]
         embeddings = [
             self.model.encode(f"passage: {text}", normalize_embeddings=True).tolist()
             for text in documents
         ]
-        self.collection.add(
-            ids=[chunk_id for chunk_id, _chunk in new_items],
+        self.collection.upsert(
+            ids=self.ids,
             documents=documents,
             embeddings=embeddings,
-            metadatas=[_metadata(chunk, chunk_id) for chunk_id, chunk in new_items],
+            metadatas=[_metadata(chunk, chunk_id) for chunk_id, chunk in zip(self.ids, self.chunks)],
         )
 
     def _visible_indexes(self, user_groups: Sequence[str]) -> List[int]:
