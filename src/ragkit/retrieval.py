@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import gzip
 import math
-import os
 import re
 from collections import Counter
 from collections.abc import Sequence
