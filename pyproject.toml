@@ -20,6 +20,7 @@ supabase = ["sentence-transformers>=3.0", "supabase>=2.0"]
 
 [project.scripts]
 rag-eat = "ragkit.cli:main"
+rag-eat-gzip = "ragkit.gzip_boundary:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
