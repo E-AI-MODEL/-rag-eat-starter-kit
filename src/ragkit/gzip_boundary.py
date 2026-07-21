@@ -8,7 +8,7 @@ import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List
+from typing import Iterable, List, Optional
 
 DEFAULT_BOUNDARY = Path("datasets/compressed")
 DEFAULT_THRESHOLD = 256 * 1024
@@ -43,7 +43,7 @@ def validate_boundary(root: Path = DEFAULT_BOUNDARY) -> List[BoundaryViolation]:
     return violations
 
 
-def compress_file(source: Path, destination: Path | None = None, *, remove_source: bool = False) -> Path:
+def compress_file(source: Path, destination: Optional[Path] = None, *, remove_source: bool = False) -> Path:
     """Create a reproducible gzip file with timestamp zero."""
     if not source.is_file():
         raise FileNotFoundError(source)
@@ -95,7 +95,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == "check":
         violations = validate_boundary(args.boundary)
