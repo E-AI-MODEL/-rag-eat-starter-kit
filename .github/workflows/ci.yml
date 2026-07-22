@@ -25,6 +25,8 @@ jobs:
         run: pip install -e ".[dev,web,anthropic]"
       - name: Lint
         run: ruff check .
+      - name: Validate gzip storage boundary
+        run: rag-eat-gzip check
       - name: Validate EAT profile and run the eval set
         run: python3 run.py
       - name: Unit tests

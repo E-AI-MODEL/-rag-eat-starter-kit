@@ -7,20 +7,21 @@ selection of the most recent source.
 
 from __future__ import annotations
 
-import glob
+import gzip
 import math
-import os
 import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from pathlib import Path
 from typing import Dict, List
 
 import yaml
 
 _TOKEN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 _FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---[ \t]*\n?", re.DOTALL)
+_SUPPORTED_CORPUS_SUFFIXES = (".md", ".markdown", ".md.gz", ".markdown.gz")
 _STOPWORDS = {
     "the", "a", "an", "is", "are", "was", "were", "be", "what", "which", "who",
     "does", "do", "did", "of", "to", "for", "in", "on", "and", "or", "now",
@@ -121,14 +122,61 @@ def _parse_date(value: object) -> str:
     )
 
 
+def _logical_source_name(path: Path) -> str:
+    """Return the document name without Markdown and optional gzip suffixes."""
+    name = path.name
+    if name.endswith(".gz"):
+        name = name[:-3]
+    for suffix in (".markdown", ".md"):
+        if name.endswith(suffix):
+            return name[: -len(suffix)]
+    return name
+
+
+def _read_corpus_document(path: Path) -> str:
+    """Read UTF-8 Markdown from a plain file or a gzip stream."""
+    if path.name.endswith(".gz"):
+        with gzip.open(path, "rt", encoding="utf-8") as fh:
+            return fh.read()
+    return path.read_text(encoding="utf-8")
+
+
+def _discover_corpus_documents(corpus_dir: str) -> List[Path]:
+    """Discover supported corpus files recursively and reject ambiguous duplicates."""
+    root = Path(corpus_dir)
+    if not root.exists():
+        return []
+    if not root.is_dir():
+        raise ValueError(f"Corpus path is not a directory: {root}")
+
+    paths = sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file() and any(path.name.endswith(suffix) for suffix in _SUPPORTED_CORPUS_SUFFIXES)
+    )
+    logical_paths: dict[str, Path] = {}
+    for path in paths:
+        # Key on the directory plus the suffix-stripped name, so any files that
+        # resolve to the same source (plain vs .gz, but also .md vs .markdown)
+        # are rejected instead of silently indexed twice under one source name.
+        relative = path.relative_to(root)
+        logical = (relative.parent / _logical_source_name(path)).as_posix()
+        previous = logical_paths.get(logical)
+        if previous is not None:
+            raise ValueError(
+                "Ambiguous corpus document: multiple files map to the same source: "
+                f"{previous} and {path}"
+            )
+        logical_paths[logical] = path
+    return paths
+
+
 def load_corpus(corpus_dir: str) -> List[Chunk]:
-    """Load every markdown document under `corpus_dir` into chunks."""
+    """Load plain or gzip-compressed Markdown documents under ``corpus_dir``."""
     chunks: List[Chunk] = []
-    pattern = os.path.join(corpus_dir, "*.md")
-    for path in sorted(glob.glob(pattern)):
-        with open(path, encoding="utf-8") as fh:
-            meta, body = _parse_frontmatter(fh.read())
-        filename = os.path.splitext(os.path.basename(path))[0]
+    for path in _discover_corpus_documents(corpus_dir):
+        meta, body = _parse_frontmatter(_read_corpus_document(path))
+        filename = _logical_source_name(path)
         source_id = str(meta.get("source_id") or filename)
         groups = meta.get("allowed_groups") or []
         if isinstance(groups, str):
