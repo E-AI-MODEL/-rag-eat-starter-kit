@@ -156,12 +156,15 @@ def _discover_corpus_documents(corpus_dir: str) -> List[Path]:
     )
     logical_paths: dict[str, Path] = {}
     for path in paths:
-        relative = path.relative_to(root).as_posix()
-        logical = relative[:-3] if relative.endswith(".gz") else relative
+        # Key on the directory plus the suffix-stripped name, so any files that
+        # resolve to the same source (plain vs .gz, but also .md vs .markdown)
+        # are rejected instead of silently indexed twice under one source name.
+        relative = path.relative_to(root)
+        logical = (relative.parent / _logical_source_name(path)).as_posix()
         previous = logical_paths.get(logical)
         if previous is not None:
             raise ValueError(
-                "Ambiguous corpus document: both compressed and uncompressed versions exist: "
+                "Ambiguous corpus document: multiple files map to the same source: "
                 f"{previous} and {path}"
             )
         logical_paths[logical] = path

@@ -55,6 +55,15 @@ class TestGzipCorpusLoading(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Ambiguous corpus document"):
                 load_corpus(tmp)
 
+    def test_rejects_md_and_markdown_versions_of_same_document(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "policy.md").write_text(DOCUMENT, encoding="utf-8")
+            (root / "policy.markdown").write_text(DOCUMENT, encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "Ambiguous corpus document"):
+                load_corpus(tmp)
+
 
 class TestGzipBoundary(unittest.TestCase):
     def test_reproducible_compression(self):
